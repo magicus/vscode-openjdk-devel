@@ -1,13 +1,27 @@
 {
   "name": "openjdk-dev",
-  "displayName": "openjdk-dev",
+  "publisher": "magicus",
+  "displayName": "OpenJDK Development",
   "description": "Support for OpenJDK developers",
   "version": "0.0.1",
+  "author": {
+    "name": "magicus"
+  },
+  "keywords": [
+    "jdk",
+    "openjdk",
+    "github",
+    "development"
+  ],
   "engines": {
     "vscode": "^1.61.0"
   },
   "categories": [
     "Other"
+  ],
+  "extensionKind": [
+    "ui",
+    "workspace"
   ],
   "activationEvents": [
     "onCommand:openjdk-dev.helloWorld"
