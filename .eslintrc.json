@@ -9,16 +9,70 @@
     "@typescript-eslint"
   ],
   "rules": {
-    "@typescript-eslint/naming-convention": "warn",
+    // Whitespace
+    "indent": ["error", 2],
+    "max-len": ["warn", { "code": 120 }],
+    "array-bracket-newline": ["warn", "consistent"],
+    "array-element-newline": ["warn", "consistent"],
+    "function-paren-newline": ["warn", "consistent"],
+    "object-curly-spacing": ["warn", "always", { "objectsInObjects": false }],
+    "function-call-argument-newline": "off",
+    "lines-between-class-members": "off",
+    "padded-blocks": "off",
+    "space-before-function-paren": ["warn", {"anonymous": "always", "named": "never", "asyncArrow": "always"}],
+
+    // Formatting
+    "curly": "error",
+    "arrow-parens": ["warn", "as-needed"],
+    "dot-location": ["warn", "property"],
+    "quote-props": "off",
+    "quotes": ["warn", "single"],
+    "semi": "warn",
     "@typescript-eslint/semi": "warn",
-    "curly": "warn",
+
+    // Style and pitfalls
+    "class-methods-use-this": "off",
     "eqeqeq": "warn",
+    "func-style": ["warn", "declaration"],
+    "multiline-ternary": "off",
+    "no-console": "off",
+    "no-else-return": "off",
+    "no-invalid-this": "off",
+    "no-magic-numbers": ["warn", { "ignore": [0, 1] }],
+    "no-negated-condition": "off",
+    "no-promise-executor-return": "off",
+    "no-ternary": "off",
     "no-throw-literal": "warn",
-    "semi": "off"
+    "no-undef-init": "off",
+    "no-undefined": "off",
+    "no-underscore-dangle": "off",
+    "no-unused-vars": ["warn", { "args": "none" }],
+    "no-use-before-define": "off",
+    "one-var": "off",
+    "prefer-destructuring": "off",
+    "prefer-template": "off",
+    "sort-keys": "off",
+    "@typescript-eslint/naming-convention": "warn",
+
+    // Stay out of my comments
+    "capitalized-comments": "off",
+    "line-comment-position": "off",
+    "lines-around-comment": "off",
+    "multiline-comment-style": "off",
+    "no-inline-comments": "off",
+    "no-warning-comments": "off",
+
+    // No limits
+    "max-classes-per-file":  "off",
+    "max-lines-per-function": "off",
+    "max-lines": "off",
+    "max-params": "off",
+    "max-statements": "off"
   },
   "ignorePatterns": [
     "out",
     "dist",
     "**/*.d.ts"
+ //   "webpack.config.js"
   ]
 }
