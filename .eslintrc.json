@@ -38,7 +38,6 @@
     "no-console": "off",
     "no-else-return": "off",
     "no-invalid-this": "off",
-    "no-magic-numbers": ["warn", { "ignore": [0, 1] }],
     "no-negated-condition": "off",
     "no-promise-executor-return": "off",
     "no-ternary": "off",

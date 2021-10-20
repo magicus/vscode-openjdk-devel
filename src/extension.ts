@@ -9,6 +9,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const githubProvider = new GitHubProvider();
   vscode.window.registerTreeDataProvider('gitHubIntegration', githubProvider);
+  setInterval(() => githubProvider.userRefresh(), 5 * 60 * 1000); // 5 minutes
 
   context.subscriptions.push(vscode.commands.registerCommand('openjdkDevel.gitHubIntegration.refresh', (url: any) => {
     githubProvider.userRefresh();
