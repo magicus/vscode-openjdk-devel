@@ -1,37 +1,113 @@
 {
-  "name": "openjdk-dev",
-  "publisher": "magicus",
+  "name": "openjdk-devel",
+  "version": "0.0.1",
   "displayName": "OpenJDK Development",
   "description": "Support for OpenJDK developers",
-  "version": "0.0.1",
+  "publisher": "magicus",
   "author": {
     "name": "magicus"
   },
+  "license": "SEE LICENSE IN LICENSE.txt",
   "keywords": [
     "jdk",
     "openjdk",
     "github",
     "development"
   ],
-  "engines": {
-    "vscode": "^1.61.0"
-  },
   "categories": [
     "Other"
   ],
+  "icon": "media/duke.png",
+  "galleryBanner": {
+    "color": "338feb",
+    "theme": "light"
+  },
+  "homepage": "https://github.com/magicus/vscode-openjdk-devel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magicus/vscode-openjdk-devel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/magicus/vscode-openjdk-devel/issues"
+  },
+  "main": "./dist/extension.js",
+  "engines": {
+    "vscode": "^1.61.0"
+  },
   "extensionKind": [
     "ui",
     "workspace"
   ],
   "activationEvents": [
-    "onCommand:openjdk-dev.helloWorld"
+    "onView:gitHubIntegration"
   ],
-  "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "OpenJDK Development",
+      "properties": {
+        "openjdkDevel.github.apiToken": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your GitHub API access token. Create a new token [at GitHub](https://github.com/settings/tokens) and paste it here."
+        },
+        "openjdkDevel.locale": {
+          "type": "string",
+          "default": "",
+          "description": "Locale descriptor to override default (e.g. 'sv-SE')"
+        }
+      }
+    },
     "commands": [
       {
-        "command": "openjdk-dev.helloWorld",
-        "title": "Hello World"
+        "command": "openjdkDevel.gitHubIntegration.refresh",
+        "title": "Refresh GitHub Integration",
+        "category": "JDK Development",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "openjdkDevel.setGithubToken",
+        "title": "Setup GitHub API Token",
+        "category": "JDK Development"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "openjdkDevel.gitHubIntegration.refresh",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "openjdkDevel.gitHubIntegration.refresh",
+          "when": "view == gitHubIntegration",
+          "group": "navigation@10"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "openjdk-devel",
+          "title": "OpenJDK Development",
+          "icon": "media/duke.svg"
+        }
+      ]
+    },
+    "views": {
+      "openjdk-devel": [
+        {
+          "id": "gitHubIntegration",
+          "name": "GitHub Integration",
+          "icon": "media/github-logo.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "gitHubIntegration",
+        "contents": "In order to use the GitHub integration, you need to specify a GitHub API token.\n[Setup GitHub token](command:openjdkDevel.setGithubToken)",
+        "when": "config.openjdkDevel.github.apiToken == ''"
       }
     ]
   },
@@ -45,6 +121,9 @@
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
+  },
+  "dependencies": {
+    "node-fetch": ">=2.6.1"
   },
   "devDependencies": {
     "@types/vscode": "^1.61.0",
