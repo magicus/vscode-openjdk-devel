@@ -104,9 +104,16 @@ abstract class GitHubTreeItem extends UpdatableTreeItem<GitHubTreeItem> {
 }
 
 class GitHubLeafTreeItem extends GitHubTreeItem {
-  constructor(label: string, id: string, icon: string,
+  constructor(label: string, id: string, icon: string, targetUrl: string | undefined,
     onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
     super(label, id, vscode.TreeItemCollapsibleState.None, false, icon, onDidChangeTreeDataEmitter);
+    if (targetUrl !== undefined) {
+      this.command = {
+        command: 'vscode.open',
+        title: 'Open in Browser',
+        arguments: [ vscode.Uri.parse(targetUrl) ]
+      };
+    }
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
@@ -133,7 +140,8 @@ class AlertsRootItem extends GitHubTreeItem {
         for (const alert of json) {
           if (alert.unread && alert.repository.owner.login === 'openjdk') {
             const notInfo = new AlertTreeItem(alert.subject.title, 'alert-' + alert.id,
-              alert.subject.latest_comment_url, alert.subject.url, new Date(alert.updated_at), alert.repository.full_name, this.onDidChangeTreeDataEmitter);
+              alert.subject.latest_comment_url, alert.subject.url, new Date(alert.updated_at),
+              alert.repository.full_name, this.onDidChangeTreeDataEmitter);
             newAlerts.push(notInfo);
           }
         }
@@ -147,42 +155,56 @@ class AlertsRootItem extends GitHubTreeItem {
 }
 
 class AlertTreeItem extends GitHubTreeItem {
+  prWebUrl: string;
   constructor(label: string, id: string, private commentUrl: string, private prUrl: string, private updatedAt: Date,
       private repository: string, onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false, 'github-item.svg', onDidChangeTreeDataEmitter);
+    // Technically we should look this up, but keep it simple and just rewrite URL
+    this.prWebUrl = this.prUrl.replace(/https:\/\/api\.github\.com\/repos\/(.*\/.*)\/pulls\/(.*)/,
+      'https://github.com/$1/pull/$2');
+  }
+
+  private fillInTimeStampAndPR(items: GitHubTreeItem[]) {
+    const prNumber = this.prUrl.split('/').pop();
+
+    let localeConf = vscode.workspace.getConfiguration('openjdkDevel').get('locale', '');
+    let locale;
+    if (localeConf === '') {
+      locale = undefined;
+    } else {
+      locale = localeConf;
+    }
+
+    items.push(new GitHubLeafTreeItem(this.updatedAt.toLocaleString(locale),
+      this.commentUrl + '+date', 'github-time.svg', this.prWebUrl, this.onDidChangeTreeDataEmitter));
+
+    items.push(new GitHubLeafTreeItem(`${this.repository}#${prNumber}`,
+      this.commentUrl + '+pr', 'github-pullrequest.svg', this.prWebUrl, this.onDidChangeTreeDataEmitter));
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return GitHubProvider.getGHjson(this.commentUrl, (comment: any, resolveJson: any, rejectJson: any) => {
-      const newCommentInfo: GitHubTreeItem[] = [];
+    const newCommentInfo: GitHubTreeItem[] = [];
 
-      // Stupid cleaning of html tags; will likely work ok since GitHub does the real work for us
-      const cleanedComment = comment.body.replace(/<\/?[^>]+(>|$)/g, '').trim();
+    if (this.commentUrl !== null) {
+      return GitHubProvider.getGHjson(this.commentUrl, (comment: any, resolveJson: any, rejectJson: any) => {
+        // Stupid cleaning of html tags; will likely work ok since GitHub does the real work for us
+        const cleanedComment = comment.body.replace(/<\/?[^>]+(>|$)/g, '').trim();
 
-      const prNumber = this.prUrl.split('/').pop();
+        newCommentInfo.push(new GitHubLeafTreeItem(cleanedComment,
+          this.commentUrl + '+comment', 'github-conversation.svg', this.prWebUrl, this.onDidChangeTreeDataEmitter));
 
-      let localeConf = vscode.workspace.getConfiguration('openjdkDevel').get('locale', '');
-      let locale;
-      if (localeConf === '') {
-        locale = undefined;
-      } else {
-        locale = localeConf;
-      }
+        newCommentInfo.push(new GitHubLeafTreeItem(comment.user.login,
+          this.commentUrl + '+username', 'github-user.svg', this.prWebUrl, this.onDidChangeTreeDataEmitter));
 
-      newCommentInfo.push(new GitHubLeafTreeItem(cleanedComment,
-        this.commentUrl + '+comment', 'github-conversation.svg', this.onDidChangeTreeDataEmitter));
+        this.fillInTimeStampAndPR(newCommentInfo);
 
-      newCommentInfo.push(new GitHubLeafTreeItem(comment.user.login,
-        this.commentUrl + '+username', 'github-user.svg', this.onDidChangeTreeDataEmitter));
+        resolveJson(newCommentInfo);
+      });
+    } else {
+      this.fillInTimeStampAndPR(newCommentInfo);
 
-      newCommentInfo.push(new GitHubLeafTreeItem(this.updatedAt.toLocaleString(locale),
-        this.commentUrl + '+date', 'github-time.svg', this.onDidChangeTreeDataEmitter));
-
-      newCommentInfo.push(new GitHubLeafTreeItem(`${this.repository}#${prNumber}`,
-        this.commentUrl + '+pr', 'github-pullrequest.svg', this.onDidChangeTreeDataEmitter));
-
-      resolveJson(newCommentInfo);
-    });
+      return Promise.resolve(newCommentInfo);
+    }
   }
 
   protected updateSelfAfterWebLoad() {
@@ -239,14 +261,17 @@ class PRTreeItem extends GitHubTreeItem {
     this.tooltip = `${label}\n${repo}#${prNumber} by @${author}`;
 
     this.convItem = new GitHubLeafTreeItem(
-      `${repo}#${prNumber} by @${author}`, 'goto' + id, 'github-conversation.svg', onDidChangeTreeDataEmitter
+      `${repo}#${prNumber} by @${author}`, 'goto' + id, 'github-conversation.svg', undefined,
+      onDidChangeTreeDataEmitter
     );
     this.generated.push(this.convItem);
     // Diff description must be complemented from prUrl, which can only be done later
-    this.diffItem = new GitHubLeafTreeItem('Diff', 'diff' + id, 'github-diff.svg', onDidChangeTreeDataEmitter);
+    this.diffItem = new GitHubLeafTreeItem('Diff', 'diff' + id, 'github-diff.svg', undefined,
+      onDidChangeTreeDataEmitter);
     this.generated.push(this.diffItem);
     if (tags) {
-      this.generated.push(new GitHubLeafTreeItem(tags, 'tags' + id, 'github-tags.svg', onDidChangeTreeDataEmitter));
+      this.generated.push(new GitHubLeafTreeItem(tags, 'tags' + id, 'github-tags.svg', undefined,
+        onDidChangeTreeDataEmitter));
 
     }
   }
