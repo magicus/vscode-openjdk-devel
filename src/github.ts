@@ -40,11 +40,14 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
   private rootNodes: GitHubTreeItem[] = [];
 
   constructor() {
-    const token = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
-    if (token === '') {
+    if (!this.verifySettings()) {
       // An empty root set will trigger the welcome view
       return;
     }
+    this.setupTree();
+  }
+
+  setupTree() {
     const alerts = new AlertsRootItem('Notifications', this.onDidChangeTreeDataEmitter);
     this.rootNodes.push(alerts);
     const prs = new PRsRootItem('My Pull Requests', this.onDidChangeTreeDataEmitter);
@@ -62,8 +65,27 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
     return element.getChildrenAny();
   }
 
+  verifySettings(): boolean {
+    const token = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
+    const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
+    return token !== '' && username !== '';
+  }
+
   userRefresh() {
+    if (!this.verifySettings()) {
+      // An empty root set will trigger the welcome view
+      // Yes, setting length to 0 is valid javascript...
+      this.rootNodes.length = 0;
+      this.signalNeedForScreenRefresh();
+      return;
+    }
+
+    if (this.rootNodes.length === 0) {
+      this.setupTree();
+    }
+
     this.rootNodes.forEach(node => node.reloadFromWeb(true));
+    this.signalNeedForScreenRefresh();
   }
 
   signalNeedForScreenRefresh(item?: GitHubTreeItem): void {
@@ -165,8 +187,9 @@ class PRsRootItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
+    const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
     return GitHubProvider.getGHjson(GitHubProvider.apiBase +
-      'search/issues?q=is:open+is:pr+archived:false+repo:openjdk/jdk+author:magicus',
+      'search/issues?q=is:open+is:pr+archived:false+repo:openjdk/jdk+author:' + username,
     (json: any, resolveJson: any, rejectJson: any) => {
       const items = json.items;
       const newPRs: PRTreeItem[] = [];

@@ -45,6 +45,11 @@
     "configuration": {
       "title": "OpenJDK Development",
       "properties": {
+        "openjdkDevel.github.username": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your GitHub user name"
+        },
         "openjdkDevel.github.apiToken": {
           "type": "string",
           "default": "",
@@ -68,7 +73,13 @@
         "command": "openjdkDevel.setGithubToken",
         "title": "Setup GitHub API Token",
         "category": "JDK Development"
+      },
+      {
+        "command": "openjdkDevel.setGithubUsername",
+        "title": "Setup GitHub username",
+        "category": "JDK Development"
       }
+
     ],
     "menus": {
       "commandPalette": [
@@ -108,7 +119,13 @@
         "view": "gitHubIntegration",
         "contents": "In order to use the GitHub integration, you need to specify a GitHub API token.\n[Setup GitHub token](command:openjdkDevel.setGithubToken)",
         "when": "config.openjdkDevel.github.apiToken == ''"
+      },
+      {
+        "view": "gitHubIntegration",
+        "contents": "In order to use the GitHub integration, you need to specify a GitHub user name.\n[Setup GitHub user name](command:openjdkDevel.setGithubUsername)",
+        "when": "config.openjdkDevel.github.username == ''"
       }
+
     ]
   },
   "scripts": {
