@@ -39,7 +39,10 @@
     "workspace"
   ],
   "activationEvents": [
-    "onView:gitHubIntegration"
+    "onView:gitHubIntegration",
+    "onCommand:openjdkDevel.gitHubIntegration.refresh",
+    "onCommand:openjdkDevel.setGithubToken",
+    "onCommand:openjdkDevel.setGithubUsername"
   ],
   "contributes": {
     "configuration": {
@@ -66,28 +69,21 @@
       {
         "command": "openjdkDevel.gitHubIntegration.refresh",
         "title": "Refresh GitHub Integration",
-        "category": "JDK Development",
+        "category": "OpenJDK Development",
         "icon": "$(refresh)"
       },
       {
         "command": "openjdkDevel.setGithubToken",
         "title": "Setup GitHub API Token",
-        "category": "JDK Development"
+        "category": "OpenJDK Development"
       },
       {
         "command": "openjdkDevel.setGithubUsername",
         "title": "Setup GitHub username",
-        "category": "JDK Development"
+        "category": "OpenJDK Development"
       }
-
     ],
     "menus": {
-      "commandPalette": [
-        {
-          "command": "openjdkDevel.gitHubIntegration.refresh",
-          "when": "false"
-        }
-      ],
       "view/title": [
         {
           "command": "openjdkDevel.gitHubIntegration.refresh",
@@ -125,7 +121,6 @@
         "contents": "In order to use the GitHub integration, you need to specify a GitHub user name.\n[Setup GitHub user name](command:openjdkDevel.setGithubUsername)",
         "when": "config.openjdkDevel.github.username == ''"
       }
-
     ]
   },
   "scripts": {

@@ -4,7 +4,7 @@ import { GitHubProvider } from './github';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext): void {
   console.log('Loading extension "OpenJDK Development"');
 
   const githubProvider = new GitHubProvider();
