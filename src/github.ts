@@ -50,8 +50,14 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
   setupTree() {
     const alerts = new AlertsRootItem('Notifications', this.onDidChangeTreeDataEmitter);
     this.rootNodes.push(alerts);
-    const prs = new PRsRootItem('My Pull Requests', this.onDidChangeTreeDataEmitter);
-    this.rootNodes.push(prs);
+    const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
+    const myPRs = new PRsRootItem('My Pull Requests', 'id-my-prs', 'is:open+is:pr+archived:false+org:openjdk+author:' + username,
+      this.onDidChangeTreeDataEmitter);
+    this.rootNodes.push(myPRs);
+    const jdkPRs = new PRsRootItem('Open Pull Requests', 'id-open-prs',
+      'is:open+is:pr+archived:false+label:rfr+org:openjdk',
+      this.onDidChangeTreeDataEmitter);
+    this.rootNodes.push(jdkPRs);
   }
 
   getTreeItem(element: GitHubTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -156,8 +162,8 @@ class AlertsRootItem extends GitHubTreeItem {
 
 class AlertTreeItem extends GitHubTreeItem {
   prWebUrl: string;
-  constructor(label: string, id: string, private commentUrl: string, private prUrl: string, private updatedAt: Date,
-      private repository: string, onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
+  constructor(label: string, id: string, readonly commentUrl: string, readonly prUrl: string, readonly updatedAt: Date,
+      readonly repository: string, onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false, 'github-item.svg', onDidChangeTreeDataEmitter);
     // Technically we should look this up, but keep it simple and just rewrite URL
     this.prWebUrl = this.prUrl.replace(/https:\/\/api\.github\.com\/repos\/(.*\/.*)\/pulls\/(.*)/,
@@ -214,23 +220,24 @@ class AlertTreeItem extends GitHubTreeItem {
 
 class PRsRootItem extends GitHubTreeItem {
 
-  constructor(label: string, onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
-    super(label, 'id-prs' + label, vscode.TreeItemCollapsibleState.Expanded, true,
+  constructor(label: string, id: string, readonly searchQuery: string,
+    onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
+    super(label, id, vscode.TreeItemCollapsibleState.Expanded, true,
       'github-logo.svg', onDidChangeTreeDataEmitter);
     this.description = '...';
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
     return GitHubProvider.getGHjson(GitHubProvider.apiBase +
-      'search/issues?q=is:open+is:pr+archived:false+repo:openjdk/jdk+author:' + username,
+      'search/issues?q=' + this.searchQuery,
     (json: any, resolveJson: any, rejectJson: any) => {
       const items = json.items;
       const newPRs: PRTreeItem[] = [];
 
       for (const item of items) {
         const tags = item.labels.map((label: any) => label.name).join(' ');
-        const itemInfo = new PRTreeItem(item.title, 'pr-' + item.id, item.html_url,
+        const niceTitle = item.title.replace(/^[^0-9]+([0-9][0-9]+):? *(.*$)/, '$1: $2').trim();
+        const itemInfo = new PRTreeItem(niceTitle, this.id + '-' + item.id, item.html_url,
           item.repository_url.replace('https://api.github.com/repos/', ''),
           item.number, tags, item.user.login, item.pull_request.url,
           this.onDidChangeTreeDataEmitter);
@@ -253,7 +260,7 @@ class PRTreeItem extends GitHubTreeItem {
   convItem: GitHubLeafTreeItem;
   constructor(label: string, id: string, userReadableUrl: string, repo: string,
     prNumber: number, tags: string,
-    author: string, private prUrl: string,
+    author: string, readonly prUrl: string,
 
     onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false,
