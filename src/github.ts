@@ -265,27 +265,25 @@ class PRsRootItem extends GitHubTreeItem {
 class PRTreeItem extends GitHubTreeItem {
   generated: GitHubTreeItem[] = [];
   diffItem: GitHubLeafTreeItem;
-  convItem: GitHubLeafTreeItem;
   constructor(label: string, id: string, userReadableUrl: string, repo: string,
-    prNumber: number, tags: string,
-    author: string, readonly prUrl: string,
-
+    prNumber: number, tags: string, author: string, readonly prUrl: string,
     onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false,
       'github-pullrequest.svg', onDidChangeTreeDataEmitter);
     this.tooltip = `${label}\n${repo}#${prNumber} by @${author}`;
 
-    this.convItem = new GitHubLeafTreeItem(
-      `${repo}#${prNumber} by @${author}`, 'goto' + id, 'github-conversation.svg', undefined,
-      onDidChangeTreeDataEmitter
-    );
-    this.generated.push(this.convItem);
+    const prUrlBase = `https://github.com/${repo}/pull/${prNumber}`;
+
+    this.generated.push(new GitHubLeafTreeItem(`${repo}#${prNumber} by @${author}`, 'goto' + id,
+      'github-conversation.svg', prUrlBase, onDidChangeTreeDataEmitter));
+
     // Diff description must be complemented from prUrl, which can only be done later
-    this.diffItem = new GitHubLeafTreeItem('Diff', 'diff' + id, 'github-diff.svg', undefined,
-      onDidChangeTreeDataEmitter);
+    this.diffItem = new GitHubLeafTreeItem('Diff', 'diff' + id, 'github-diff.svg',
+      prUrlBase + '/files', onDidChangeTreeDataEmitter);
     this.generated.push(this.diffItem);
+
     if (tags) {
-      this.generated.push(new GitHubLeafTreeItem(tags, 'tags' + id, 'github-tags.svg', undefined,
+      this.generated.push(new GitHubLeafTreeItem(tags, 'tags' + id, 'github-tags.svg', prUrlBase,
         onDidChangeTreeDataEmitter));
 
     }
@@ -297,6 +295,7 @@ class PRTreeItem extends GitHubTreeItem {
       resolveJson(this.generated);
     });
   }
+
   protected updateSelfAfterWebLoad(): void {
     // do nothing
   }
