@@ -204,8 +204,10 @@ class AlertTreeItem extends GitHubTreeItem {
         // Stupid cleaning of html tags; will likely work ok since GitHub does the real work for us
         const cleanedComment = comment.body.replace(/<\/?[^>]+(>|$)/g, '').trim();
 
-        newCommentInfo.push(new GitHubLeafTreeItem(cleanedComment,
-          this.commentUrl + '+comment', 'github-conversation.svg', this.prWebUrl, this.onDidChangeTreeDataEmitter));
+        const commentItem = new GitHubLeafTreeItem(cleanedComment.replace(/\s+/g, ' '),
+          this.commentUrl + '+comment', 'github-conversation.svg', this.prWebUrl, this.onDidChangeTreeDataEmitter);
+        commentItem.tooltip = new vscode.MarkdownString(comment.body);
+        newCommentInfo.push(commentItem);
 
         newCommentInfo.push(new GitHubLeafTreeItem(comment.user.login,
           this.commentUrl + '+username', 'github-user.svg', this.prWebUrl, this.onDidChangeTreeDataEmitter));
@@ -282,7 +284,7 @@ class PRTreeItem extends GitHubTreeItem {
     this.generated.push(new GitHubLeafTreeItem(`${repo}#${prNumber} by @${author}`, 'goto' + id,
       'github-overview.svg', prUrlBase, onDidChangeTreeDataEmitter));
 
-    const descItem = new GitHubLeafTreeItem(description.replace(/\n/gs, ' '), 'desc' + id,
+    const descItem = new GitHubLeafTreeItem(description.replace(/\s+/g, ' '), 'desc' + id,
       'github-conversation.svg', prUrlBase, onDidChangeTreeDataEmitter);
     descItem.tooltip = new vscode.MarkdownString(description);
     this.generated.push(descItem);
