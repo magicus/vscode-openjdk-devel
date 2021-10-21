@@ -56,7 +56,7 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
     this.rootNodes.push(myPRs);
 
     const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
-    const jdkPRs = new PRsRootItem('Open PRs for ' + labelFilter, 'id-open-prs',
+    const jdkPRs = new PRsRootItem('PRs for ' + labelFilter, 'id-open-prs',
       'is:open+is:pr+archived:false+label:rfr+org:openjdk+label:' + labelFilter,
       this.onDidChangeTreeDataEmitter);
     this.rootNodes.push(jdkPRs);
@@ -245,9 +245,13 @@ class PRsRootItem extends GitHubTreeItem {
       for (const item of items) {
         const tags = item.labels.map((label: any) => label.name).join(' ');
         const niceTitle = item.title.replace(/^[^0-9]+([0-9][0-9]+):? *(.*$)/, '$1: $2').trim();
+        const description = item.body.replace(/^(.*)<!-- Anything below this marker will be .*$/s, '$1').trim();
+        var jbsMatch = /### Issue\n \* \[([A-Z]+-[0-9]+)\]\(.*bugs.openjdk.*\): /s.exec(item.body);
+        const jbsIssue = jbsMatch ? jbsMatch[1] : undefined;
+
         const itemInfo = new PRTreeItem(niceTitle, this.id + '-' + item.id, item.html_url,
           item.repository_url.replace('https://api.github.com/repos/', ''),
-          item.number, tags, item.user.login, item.pull_request.url,
+          item.number, jbsIssue, tags, item.user.login, item.pull_request.url, description,
           this.onDidChangeTreeDataEmitter);
         newPRs.push(itemInfo);
       }
@@ -266,7 +270,8 @@ class PRTreeItem extends GitHubTreeItem {
   generated: GitHubTreeItem[] = [];
   diffItem: GitHubLeafTreeItem;
   constructor(label: string, id: string, userReadableUrl: string, repo: string,
-    prNumber: number, tags: string, author: string, readonly prUrl: string,
+    prNumber: number, jbsIssue: string | undefined, tags: string, author: string, readonly prUrl: string,
+    description: string,
     onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false,
       'github-pullrequest.svg', onDidChangeTreeDataEmitter);
@@ -275,7 +280,17 @@ class PRTreeItem extends GitHubTreeItem {
     const prUrlBase = `https://github.com/${repo}/pull/${prNumber}`;
 
     this.generated.push(new GitHubLeafTreeItem(`${repo}#${prNumber} by @${author}`, 'goto' + id,
-      'github-conversation.svg', prUrlBase, onDidChangeTreeDataEmitter));
+      'github-overview.svg', prUrlBase, onDidChangeTreeDataEmitter));
+
+    const descItem = new GitHubLeafTreeItem(description.replace(/\n/gs, ' '), 'desc' + id,
+      'github-conversation.svg', prUrlBase, onDidChangeTreeDataEmitter);
+    descItem.tooltip = new vscode.MarkdownString(description);
+    this.generated.push(descItem);
+
+    if (jbsIssue) {
+      this.generated.push(new GitHubLeafTreeItem(jbsIssue, 'jbs' + id,
+        'github-bug.svg', 'https://bugs.openjdk.java.net/browse/' + jbsIssue, onDidChangeTreeDataEmitter));
+    }
 
     // Diff description must be complemented from prUrl, which can only be done later
     this.diffItem = new GitHubLeafTreeItem('Diff', 'diff' + id, 'github-diff.svg',
