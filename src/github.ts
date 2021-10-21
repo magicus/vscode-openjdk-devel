@@ -51,11 +51,13 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
     const alerts = new AlertsRootItem('Notifications', this.onDidChangeTreeDataEmitter);
     this.rootNodes.push(alerts);
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
-    const myPRs = new PRsRootItem('My Pull Requests', 'id-my-prs', 'is:open+is:pr+archived:false+org:openjdk+author:' + username,
+    const myPRs = new PRsRootItem('My PRs', 'id-my-prs', 'is:open+is:pr+archived:false+org:openjdk+author:' + username,
       this.onDidChangeTreeDataEmitter);
     this.rootNodes.push(myPRs);
-    const jdkPRs = new PRsRootItem('Open Pull Requests', 'id-open-prs',
-      'is:open+is:pr+archived:false+label:rfr+org:openjdk',
+
+    const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
+    const jdkPRs = new PRsRootItem('Open PRs for ' + labelFilter, 'id-open-prs',
+      'is:open+is:pr+archived:false+label:rfr+org:openjdk+label:' + labelFilter,
       this.onDidChangeTreeDataEmitter);
     this.rootNodes.push(jdkPRs);
   }
@@ -74,16 +76,22 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
   verifySettings(): boolean {
     const token = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
-    return token !== '' && username !== '';
+    const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
+    return token !== '' && username !== '' && labelFilter !== '';
   }
 
-  userRefresh() {
+  userRefresh(forceReload?: boolean) {
     if (!this.verifySettings()) {
       // An empty root set will trigger the welcome view
       // Yes, setting length to 0 is valid javascript...
       this.rootNodes.length = 0;
       this.signalNeedForScreenRefresh();
       return;
+    }
+
+    if (forceReload) {
+      // Remove all root nodes and recreate them below
+      this.rootNodes.length = 0;
     }
 
     if (this.rootNodes.length === 0) {

@@ -58,6 +58,11 @@
           "default": "",
           "markdownDescription": "Your GitHub API access token. Create a new token [at GitHub](https://github.com/settings/tokens) and paste it here."
         },
+        "openjdkDevel.labelFilter": {
+          "type": "string",
+          "default": "",
+          "description": "Comma-separated list of labels to show Pull Requests for"
+        },
         "openjdkDevel.locale": {
           "type": "string",
           "default": "",
@@ -80,6 +85,11 @@
       {
         "command": "openjdkDevel.setGithubUsername",
         "title": "Setup GitHub username",
+        "category": "OpenJDK Development"
+      },
+      {
+        "command": "openjdkDevel.setLabelFilter",
+        "title": "Setup label filter",
         "category": "OpenJDK Development"
       }
     ],
@@ -120,6 +130,11 @@
         "view": "gitHubIntegration",
         "contents": "In order to use the GitHub integration, you need to specify a GitHub user name.\n[Setup GitHub user name](command:openjdkDevel.setGithubUsername)",
         "when": "config.openjdkDevel.github.username == ''"
+      },
+      {
+        "view": "gitHubIntegration",
+        "contents": "In order to use the GitHub integration, you need to select a label filter.\n[Setup label filter](command:openjdkDevel.setLabelFilter)",
+        "when": "config.openjdkDevel.labelFilter == ''"
       }
     ]
   },
