@@ -17,7 +17,7 @@
   "categories": [
     "Other"
   ],
-  "icon": "media/duke.png",
+  "icon": "media/duke-logo.png",
   "galleryBanner": {
     "color": "338feb",
     "theme": "light"
@@ -97,7 +97,7 @@
         {
           "id": "openjdk-devel",
           "title": "OpenJDK Development",
-          "icon": "media/duke.svg"
+          "icon": "media/duke-icon.svg"
         }
       ]
     },
