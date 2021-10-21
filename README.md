@@ -7,12 +7,23 @@ Currently, the extension provides basic integration with GitHub, but the
 intention is to keep adding functionality that is relevant to OpenJDK
 developers. If you have any ideas or suggestions, please let me know!
 
+![Screenshot](media/screenshot.png)
+
 ## Extension Settings
 
 This extension contributes the following settings:
 
+* `openjdkDevel.github.username`: GitHub user name needed for GitHub integration
 * `openjdkDevel.github.apiToken`: GitHub API token needed for GitHub integration
 * `openjdkDevel.locale`: override locale for formatting of e.g. dates
+
+## Extension Commands
+
+This extension contributes the following commands:
+
+* `openjdkDevel.gitHubIntegration.refresh`: Refresh GitHub Integration
+* `openjdkDevel.setGithubToken`: Setup GitHub API Token
+* `openjdkDevel.setGithubUsername`: Setup GitHub username
 
 ## Release Notes
 
