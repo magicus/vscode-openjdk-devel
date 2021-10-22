@@ -18,10 +18,6 @@
     "Other"
   ],
   "icon": "media/duke-logo.png",
-  "galleryBanner": {
-    "color": "338feb",
-    "theme": "light"
-  },
   "homepage": "https://github.com/magicus/vscode-openjdk-devel",
   "repository": {
     "type": "git",
