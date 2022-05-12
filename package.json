@@ -52,7 +52,7 @@
         "openjdkDevel.github.apiToken": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Your GitHub API access token. Create a new token [at GitHub](https://github.com/settings/tokens) and paste it here."
+          "markdownDescription": "Your GitHub API access token. Create a new token [at GitHub](https://github.com/settings/tokens) with `notifications` scope, and paste it here."
         },
         "openjdkDevel.labelFilter": {
           "type": "string",
