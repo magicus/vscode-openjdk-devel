@@ -27,6 +27,10 @@ This extension contributes the following commands:
 
 ## Release Notes
 
+### 1.1.0
+
+Added support for "repo" filters as well as "label" filters.
+
 ### 1.0.0
 
 Initial release. This includes basic GitHub integration.
