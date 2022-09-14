@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { GitHubProvider } from './github';
+import { ConfigurationProvider } from './configurations';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -10,6 +11,9 @@ export function activate(context: vscode.ExtensionContext): void {
   const githubProvider = new GitHubProvider();
   vscode.window.registerTreeDataProvider('gitHubIntegration', githubProvider);
   setInterval(() => githubProvider.userRefresh(), 5 * 60 * 1000); // 5 minutes
+
+  const configurationProvider = new ConfigurationProvider();
+  vscode.window.registerTreeDataProvider('configurations', configurationProvider);
 
   context.subscriptions.push(vscode.commands.registerCommand('openjdkDevel.gitHubIntegration.refresh', (url: any) => {
     githubProvider.userRefresh();

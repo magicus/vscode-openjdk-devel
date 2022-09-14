@@ -113,6 +113,11 @@
           "id": "gitHubIntegration",
           "name": "GitHub Integration",
           "icon": "media/github-logo.svg"
+        },
+        {
+          "id": "configurations",
+          "name": "Configurations",
+          "icon": "$(folder-library)"
         }
       ]
     },
