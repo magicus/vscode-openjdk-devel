@@ -56,10 +56,22 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
     this.rootNodes.push(myPRs);
 
     const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
-    const jdkPRs = new PRsRootItem('PRs for ' + labelFilter, 'id-open-prs',
-      'is:open+is:pr+archived:false+label:rfr+org:openjdk+label:' + labelFilter,
-      this.onDidChangeTreeDataEmitter);
-    this.rootNodes.push(jdkPRs);
+    if (labelFilter !== '') {
+      const labelPRs = new PRsRootItem('PRs for ' + labelFilter, 'id-open-prs-labels',
+        'is:open+is:pr+archived:false+label:rfr+org:openjdk+label:' + labelFilter,
+        this.onDidChangeTreeDataEmitter);
+      this.rootNodes.push(labelPRs);
+    }
+
+    const repoFilter: string = vscode.workspace.getConfiguration('openjdkDevel').get('repoFilter', '');
+    if (repoFilter !== '') {
+      repoFilter.split(',').forEach(repo => {
+        const repoPRs = new PRsRootItem('PRs for ' + repo, 'id-open-prs-repo-' + repo,
+          'is:open+is:pr+archived:false+label:rfr+repo:openjdk/' + repo,
+          this.onDidChangeTreeDataEmitter);
+        this.rootNodes.push(repoPRs);
+      });
+    }
   }
 
   getTreeItem(element: GitHubTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -77,7 +89,8 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
     const token = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
     const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
-    return token !== '' && username !== '' && labelFilter !== '';
+    const repoFilter = vscode.workspace.getConfiguration('openjdkDevel').get('repoFilter', '');
+    return token !== '' && username !== '' && (labelFilter !== '' || repoFilter !== '');
   }
 
   userRefresh(forceReload?: boolean) {

@@ -23,8 +23,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.executeCommand('workbench.action.openSettings', 'openjdkDevel.github.username');
   }));
 
-  context.subscriptions.push(vscode.commands.registerCommand('openjdkDevel.setLabelFilter', () => {
-    vscode.commands.executeCommand('workbench.action.openSettings', 'openjdkDevel.labelFilter');
+  context.subscriptions.push(vscode.commands.registerCommand('openjdkDevel.setFilter', () => {
+    vscode.commands.executeCommand('workbench.action.openSettings', 'openjdkDevel');
   }));
 
   vscode.workspace.onDidChangeConfiguration(event => {
@@ -36,6 +36,10 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     if (event.affectsConfiguration('openjdkDevel.labelFilter')) {
       // Needs to force reload if label filter is changed
+      githubProvider.userRefresh(true);
+    }
+    if (event.affectsConfiguration('openjdkDevel.repoFilter')) {
+      // Needs to force reload if repo filter is changed
       githubProvider.userRefresh(true);
     }
   });

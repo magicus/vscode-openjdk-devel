@@ -59,6 +59,11 @@
           "default": "",
           "description": "Comma-separated list of labels to show Pull Requests for"
         },
+        "openjdkDevel.repoFilter": {
+          "type": "string",
+          "default": "",
+          "description": "Comma-separated list of OpenJDK repos to show Pull Requests for"
+        },
         "openjdkDevel.locale": {
           "type": "string",
           "default": "",
@@ -84,8 +89,8 @@
         "category": "OpenJDK Development"
       },
       {
-        "command": "openjdkDevel.setLabelFilter",
-        "title": "Setup label filter",
+        "command": "openjdkDevel.setFilter",
+        "title": "Setup PR filter",
         "category": "OpenJDK Development"
       }
     ],
@@ -129,8 +134,8 @@
       },
       {
         "view": "gitHubIntegration",
-        "contents": "In order to use the GitHub integration, you need to select a label filter.\n[Setup label filter](command:openjdkDevel.setLabelFilter)",
-        "when": "config.openjdkDevel.labelFilter == ''"
+        "contents": "In order to use the GitHub integration, you need to setup PR filters for labels and/or repos.\n[Setup PR filters](command:openjdkDevel.setFilter)",
+        "when": "config.openjdkDevel.labelFilter == '' && config.openjdkDevel.repoFilter == ''"
       }
     ]
   },
