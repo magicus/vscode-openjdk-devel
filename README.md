@@ -25,6 +25,12 @@ This extension contributes the following commands:
 * `openjdkDevel.setGithubToken`: Setup GitHub API Token
 * `openjdkDevel.setGithubUsername`: Setup GitHub username
 
+## Attributions
+
+* The Duke icon is based on an original from https://wiki.openjdk.java.net/display/duke/Main (License: New BSD)
+* Icons from Octicons https://primer.style/octicons/ (License: MIT)
+* Icons from Codicons https://microsoft.github.io/vscode-codicons/ (Licence: CC BY 4.0)
+
 ## Release Notes
 
 ### 1.1.0
