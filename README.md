@@ -30,6 +30,7 @@ This extension contributes the following commands:
 * The Duke icon is based on an original from https://wiki.openjdk.java.net/display/duke/Main (License: New BSD)
 * Icons from Octicons https://primer.style/octicons/ (License: MIT)
 * Icons from Codicons https://microsoft.github.io/vscode-codicons/ (Licence: CC BY 4.0)
+* Icons from Iconoir https://iconoir.com/ (Licence: MIT)
 
 ## Release Notes
 
