@@ -3,8 +3,10 @@
 This is a Visual Studio Code extension that provides support OpenJDK
 development. The primary audience is active developers in OpenJDK projects.
 
-Currently, the extension provides basic integration with GitHub, but the
-intention is to keep adding functionality that is relevant to OpenJDK
+The extension provides integration with OpenJDK projects on GitHub, and with
+the JDK Bug System (JBS).
+
+The intention is to keep adding functionality that is relevant to OpenJDK
 developers. If you have any ideas or suggestions, please let me know!
 
 ![Screenshot](media/screenshot.png)
@@ -15,6 +17,11 @@ This extension contributes the following settings:
 
 * `openjdkDevel.github.username`: GitHub user name needed for GitHub integration
 * `openjdkDevel.github.apiToken`: GitHub API token needed for GitHub integration
+* `openjdkDevel.jbs.username`: JBS user name needed for JBS integration
+* `openjdkDevel.jbs.apiToken`: JBS API token needed for JBS integration
+* `openjdkDevel.jbs.filters`: Comma-separated list of JBS filter IDs to show
+* `openjdkDevel.labelFilter`: Comma-separated list of labels to show Pull Requests for
+* `openjdkDevel.repoFilter`: Comma-separated list of OpenJDK repos to show Pull Requests for
 * `openjdkDevel.locale`: override locale for formatting of e.g. dates
 
 ## Extension Commands
@@ -22,8 +29,12 @@ This extension contributes the following settings:
 This extension contributes the following commands:
 
 * `openjdkDevel.gitHubIntegration.refresh`: Refresh GitHub Integration
+* `openjdkDevel.jbsIntegration.refresh`: Refresh JBS Integration
 * `openjdkDevel.setGithubToken`: Setup GitHub API Token
 * `openjdkDevel.setGithubUsername`: Setup GitHub username
+* `openjdkDevel.setJbsToken`: Setup JBS API Token
+* `openjdkDevel.setJbsUsername`: Setup JBS username
+* `openjdkDevel.setFilter`: Setup PR filter
 
 ## Attributions
 
@@ -33,6 +44,12 @@ This extension contributes the following commands:
 * Icons from Iconoir https://iconoir.com/ (Licence: MIT)
 
 ## Release Notes
+
+### 2.0.0
+
+Added JBS integration.
+
+Fixed problem with multiple JBS links in PRs.
 
 ### 1.1.0
 
