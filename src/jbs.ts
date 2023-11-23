@@ -56,9 +56,7 @@ export class JbsProvider implements vscode.TreeDataProvider<JbsTreeItem> {
 
     if (jbsFilter !== '') {
       jbsFilter.split(',').forEach(filter => {
-        const filterIssues = new IssuesRootItem('Issues for filter ' + filter, 'issue-filter-' + filter,
-          'jql=filter=' + filter,
-          this.onDidChangeTreeDataEmitter);
+        const filterIssues = new FilterIssuesRootItem(filter, this.onDidChangeTreeDataEmitter);
         this.rootNodes.push(filterIssues);
       });
     }
@@ -201,6 +199,25 @@ class IssuesRootItem extends JbsTreeItem {
 
   protected updateSelfAfterWebLoad() {
     this.description = this.children ? this.children.length + ' issues' : 'No issues';
+  }
+}
+
+class FilterIssuesRootItem extends IssuesRootItem {
+  constructor(readonly filterId: string,
+    onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
+    super('Issues for filter ' + filterId, 'issue-filter-' + filterId,
+      'jql=filter=' + filterId, onDidChangeTreeDataEmitter);
+  }
+
+  protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
+    // Update our label
+    JbsProvider.getJBSjson(JbsProvider.apiBase + 'filter/' + this.filterId,
+      (json: any, resolveJson: any, rejectJson: any) => {
+        var label = json.name;
+        this.label = label;
+      });
+
+    return super.loadChildrenArrayFromWeb();
   }
 }
 
