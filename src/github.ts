@@ -261,12 +261,23 @@ class PRsRootItem extends GitHubTreeItem {
         const tags = item.labels.map((label: any) => label.name).join(' ');
         const niceTitle = item.title.replace(/^[^0-9]+([0-9][0-9]+):? *(.*$)/, '$1: $2').trim();
         const description = item.body.replace(/^(.*)<!-- Anything below this marker will be .*$/s, '$1').trim();
-        var jbsMatch = /### Issue\n \* \[([A-Z]+-[0-9]+)\]\(.*bugs.openjdk.*\): /s.exec(item.body);
-        const jbsIssue = jbsMatch ? jbsMatch[1] : undefined;
+
+        const jbsIssues: string[] = [];
+        var issuesPart = /### Issues?\n \* .*\n### Review/s.exec(item.body);
+        if (issuesPart) {
+          const jbsPattern = /\* \[([A-Z]+-[0-9]+)\]\(.*bugs.openjdk.*\):/g;
+          var match;
+
+          while ((match = jbsPattern.exec(issuesPart[0])) !== null) {
+            if (match[1]) {
+              jbsIssues.push(match[1]);
+            }
+          }
+        }
 
         const itemInfo = new PRTreeItem(niceTitle, this.id + '-' + item.id, item.html_url,
           item.repository_url.replace('https://api.github.com/repos/', ''),
-          item.number, jbsIssue, tags, item.user.login, item.pull_request.url, description,
+          item.number, jbsIssues, tags, item.user.login, item.pull_request.url, description,
           this.onDidChangeTreeDataEmitter);
         newPRs.push(itemInfo);
       }
@@ -285,7 +296,7 @@ class PRTreeItem extends GitHubTreeItem {
   generated: GitHubTreeItem[] = [];
   diffItem: GitHubLeafTreeItem;
   constructor(label: string, id: string, userReadableUrl: string, repo: string,
-    prNumber: number, jbsIssue: string | undefined, tags: string, author: string, readonly prUrl: string,
+    prNumber: number, jbsIssues: string[], tags: string, author: string, readonly prUrl: string,
     description: string,
     onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false,
@@ -302,8 +313,8 @@ class PRTreeItem extends GitHubTreeItem {
     descItem.tooltip = new vscode.MarkdownString(description);
     this.generated.push(descItem);
 
-    if (jbsIssue) {
-      this.generated.push(new GitHubLeafTreeItem(jbsIssue, 'jbs' + id,
+    for (const jbsIssue of jbsIssues) {
+      this.generated.push(new GitHubLeafTreeItem(jbsIssue, 'jbs' + id + '-' + jbsIssue,
         'github-bug.svg', 'https://bugs.openjdk.java.net/browse/' + jbsIssue, onDidChangeTreeDataEmitter));
     }
 
