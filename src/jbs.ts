@@ -124,7 +124,7 @@ class JbsLeafTreeItem extends JbsTreeItem {
       this.command = {
         command: 'vscode.open',
         title: 'Open in Browser',
-        arguments: [ vscode.Uri.parse(targetUrl) ]
+        arguments: [vscode.Uri.parse(targetUrl)]
       };
     }
   }
@@ -233,19 +233,19 @@ class IssueTreeItem extends JbsTreeItem {
     readonly assignee: string, readonly assigneeFullName: string,
     readonly fixVersion: string | null,
     onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
-    const label = key + ': ' + summary;
-
-    let statusIcon;
-    if (status === 'New') {
-      statusIcon = 'jbs-new.svg';
-    } else if (status === 'Closed' || status === 'Resolved' || status === 'Completed' || status === 'Integrated') {
-      statusIcon = 'jbs-closed.svg';
-    } else {
-      statusIcon = 'jbs-open.svg';
-    }
-
-    super(label, issueId, vscode.TreeItemCollapsibleState.Collapsed, false, statusIcon, onDidChangeTreeDataEmitter);
+    super(key + ': ' + summary, issueId, vscode.TreeItemCollapsibleState.Collapsed, false,
+      getStatusIcon(), onDidChangeTreeDataEmitter);
     this.webUrl = 'https://bugs.openjdk.org/browse/' + key;
+
+    function getStatusIcon(): string {
+      if (status === 'New') {
+        return 'jbs-new.svg';
+      } else if (status === 'Closed' || status === 'Resolved' || status === 'Completed' || status === 'Integrated') {
+        return 'jbs-closed.svg';
+      } else {
+        return 'jbs-open.svg';
+      }
+    }
   }
 
   private populateIssue(items: JbsTreeItem[]) {
