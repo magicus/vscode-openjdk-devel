@@ -304,23 +304,55 @@ class IssueTreeItem extends JbsTreeItem {
     this.populateIssue(newIssueInfo);
 
     // Add latest comment
-    return JbsProvider.getJBSjson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
+    const commentPromise = JbsProvider.getJBSjson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
       (json: any, resolveJson: any, rejectJson: any) => {
+        const commentItems: JbsTreeItem[] = [];
+
         if (json.comments.length > 0) {
-          var commentAuthor = json.comments[0].author.name;
-          var commentId = json.comments[0].id;
-          var comment = json.comments[0].body;
+          const commentAuthor = json.comments[0].author.name;
+          const commentId = json.comments[0].id;
+          const comment = json.comments[0].body;
           const commentUrl = this.webUrl + '?focusedId=' + commentId +
-          '&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-' + commentId;
+            '&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-' + commentId;
 
           const commentItem = new JbsLeafTreeItem('@' + commentAuthor + ': ' + comment,
             this.issueId + '+comment', 'github-conversation.svg', commentUrl,
             this.onDidChangeTreeDataEmitter);
-          newIssueInfo.push(commentItem);
+          commentItems.push(commentItem);
         }
 
-        resolveJson(newIssueInfo);
+        resolveJson(commentItems);
       });
+
+    const reviewPromise = JbsProvider.getJBSjson(this.apiUrl + '/remotelink',
+      (json: any, resolveJson: any, rejectJson: any) => {
+        const reviewItems: JbsTreeItem[] = [];
+
+        for (const link of json) {
+          if (link.object.title === 'Review') {
+            const reviewUrl = link.object.url;
+            // transform from e.g. openjdk/jdk/4711 to openjdk/jdk#4711
+            const summary = link.object.summary.replace(/\/([^\/]+)$/, '#$1');
+
+            const reviewItem = new JbsLeafTreeItem(summary,
+              this.issueId + '+review-' + summary, 'github-pullrequest.svg', reviewUrl,
+              this.onDidChangeTreeDataEmitter);
+            reviewItems.push(reviewItem);
+          }
+        }
+
+        resolveJson(reviewItems);
+      });
+
+    // This dance is needed to keep the items in the same order all the time
+    return Promise.all([commentPromise, reviewPromise]).then(input => {
+      const commentInfo = input[0];
+      const reviewInfo = input[1];
+
+      newIssueInfo.push(...commentInfo);
+      newIssueInfo.push(...reviewInfo);
+      return newIssueInfo;
+    });
   }
 
   protected updateSelfAfterWebLoad() {
