@@ -268,7 +268,7 @@ class PRsRootItem extends GitHubTreeItem {
           const jbsPattern = /\* \[([A-Z]+-[0-9]+)\]\(.*bugs.openjdk.*\):/g;
           var match;
 
-          while ((match = jbsPattern.exec(issuesPart[0])) !== null) {
+          while ((match = jbsPattern.exec(issuesPart[0]!)) !== null) {
             if (match[1]) {
               jbsIssues.push(match[1]);
             }
