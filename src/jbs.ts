@@ -223,8 +223,6 @@ class FilterIssuesRootItem extends IssuesRootItem {
 
 class IssueTreeItem extends JbsTreeItem {
   webUrl: string = '';
-  commentUrl = null;
-  repository: string = '';
 
   constructor(key: string, readonly issueId: string, readonly apiUrl: string,
     readonly summary: string, readonly status: string, readonly type: string,
@@ -304,7 +302,25 @@ class IssueTreeItem extends JbsTreeItem {
     const newIssueInfo: JbsTreeItem[] = [];
 
     this.populateIssue(newIssueInfo);
-    return Promise.resolve(newIssueInfo);
+
+    // Add latest comment
+    return JbsProvider.getJBSjson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
+      (json: any, resolveJson: any, rejectJson: any) => {
+        if (json.comments.length > 0) {
+          var commentAuthor = json.comments[0].author.name;
+          var commentId = json.comments[0].id;
+          var comment = json.comments[0].body;
+          const commentUrl = this.webUrl + '?focusedId=' + commentId +
+          '&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-' + commentId;
+
+          const commentItem = new JbsLeafTreeItem('@' + commentAuthor + ': ' + comment,
+            this.issueId + '+comment', 'github-conversation.svg', commentUrl,
+            this.onDidChangeTreeDataEmitter);
+          newIssueInfo.push(commentItem);
+        }
+
+        resolveJson(newIssueInfo);
+      });
   }
 
   protected updateSelfAfterWebLoad() {
