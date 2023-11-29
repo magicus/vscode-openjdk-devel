@@ -9,7 +9,10 @@ export function activate(context: vscode.ExtensionContext): void {
   console.log('Loading extension "OpenJDK Development"');
 
   const githubProvider = new GitHubProvider();
-  vscode.window.registerTreeDataProvider('gitHubIntegration', githubProvider);
+  vscode.window.createTreeView('gitHubIntegration', {
+    treeDataProvider: githubProvider,
+    showCollapseAll: true
+  });
   setInterval(() => githubProvider.userRefresh(), 5 * 60 * 1000); // 5 minutes
 
   context.subscriptions.push(vscode.commands.registerCommand('openjdkDevel.gitHubIntegration.refresh', (url: any) => {
@@ -17,7 +20,10 @@ export function activate(context: vscode.ExtensionContext): void {
   }));
 
   const jbsProvider = new JbsProvider();
-  vscode.window.registerTreeDataProvider('jbsIntegration', jbsProvider);
+  vscode.window.createTreeView('jbsIntegration', {
+    treeDataProvider: jbsProvider,
+    showCollapseAll: true
+  });
   setInterval(() => jbsProvider.userRefresh(), 5 * 60 * 1000); // 5 minutes
 
   context.subscriptions.push(vscode.commands.registerCommand('openjdkDevel.jbsIntegration.refresh', (url: any) => {

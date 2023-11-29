@@ -45,6 +45,10 @@ This extension contributes the following commands:
 
 ## Release Notes
 
+### 2.0.1
+
+Added "Collapse all" button to tree views.
+
 ### 2.0.0
 
 Added JBS integration.
