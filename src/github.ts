@@ -4,21 +4,20 @@ import * as vscode from 'vscode';
 import { UpdatableProvider, UpdatableTreeItem  } from './updatable';
 import fetch from 'node-fetch';
 
-
-export class GitHubProvider extends UpdatableProvider {
+export class GitHubUpdatableDownloader {
   private static apiToken: string = '';
   public static apiBase: string = 'https://api.github.com/';
 
   public static getGHjson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
-    GitHubProvider.apiToken = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
-    if (GitHubProvider.apiToken === '') {
+    GitHubUpdatableDownloader.apiToken = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
+    if (GitHubUpdatableDownloader.apiToken === '') {
       return Promise.reject(new Error('No GitHub API Token set'));
     }
 
     return new Promise<GitHubTreeItem[]>((resolve, reject) => fetch(url, {
       /* eslint-disable @typescript-eslint/naming-convention */
       headers: {
-        'Authorization': 'token ' + GitHubProvider.apiToken,
+        'Authorization': 'token ' + GitHubUpdatableDownloader.apiToken,
         'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'vscode-openjdk-devel'
       }
@@ -32,7 +31,9 @@ export class GitHubProvider extends UpdatableProvider {
         reject(new Error('GitHub Integration error: ' + error));
       }));
   }
+}
 
+export class GitHubProvider extends UpdatableProvider {
   protected verifySettings(): boolean {
     const token = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
@@ -113,7 +114,7 @@ class AlertsRootItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return GitHubProvider.getGHjson(GitHubProvider.apiBase + 'notifications',
+    return GitHubUpdatableDownloader.getGHjson(GitHubUpdatableDownloader.apiBase + 'notifications',
       (json: any, resolveJson: any, rejectJson: any) => {
         const newAlerts: AlertTreeItem[] = [];
 
@@ -166,7 +167,7 @@ class AlertTreeItem extends GitHubTreeItem {
     const newCommentInfo: GitHubTreeItem[] = [];
 
     if (this.commentUrl !== null) {
-      return GitHubProvider.getGHjson(this.commentUrl, (comment: any, resolveJson: any, rejectJson: any) => {
+      return GitHubUpdatableDownloader.getGHjson(this.commentUrl, (comment: any, resolveJson: any, rejectJson: any) => {
         // Stupid cleaning of html tags; will likely work ok since GitHub does the real work for us
         const cleanedComment = comment.body.replace(/<\/?[^>]+(>|$)/g, '').trim();
 
@@ -203,7 +204,7 @@ class PRsRootItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return GitHubProvider.getGHjson(GitHubProvider.apiBase +
+    return GitHubUpdatableDownloader.getGHjson(GitHubUpdatableDownloader.apiBase +
       'search/issues?q=' + this.searchQuery,
     (json: any, resolveJson: any, rejectJson: any) => {
       const items = json.items;
@@ -283,7 +284,7 @@ class PRTreeItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return GitHubProvider.getGHjson(this.prUrl, (json: any, resolveJson: any, rejectJson: any) => {
+    return GitHubUpdatableDownloader.getGHjson(this.prUrl, (json: any, resolveJson: any, rejectJson: any) => {
       this.diffItem.label = `+${json.additions} -${json.deletions}, ${json.changed_files} changed files`;
       resolveJson(this.generated);
     });
