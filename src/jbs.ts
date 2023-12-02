@@ -43,14 +43,14 @@ export class JbsProvider extends UpdatableProvider<JbsTreeItem> {
 
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.username', '');
     const myIssues = new IssuesRootItem('My open issues', 'issues-mine', 'jql=assignee%3D' + username
-      + '%20and%20resolution%3Dunresolved%20order%20by%20updated%20desc', this.onDidChangeTreeDataEmitter);
+      + '%20and%20resolution%3Dunresolved%20order%20by%20updated%20desc', this);
     rootNodes.push(myIssues);
 
     const jbsFilter: string = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.filters', '');
 
     if (jbsFilter !== '') {
       jbsFilter.split(',').forEach(filter => {
-        const filterIssues = new FilterIssuesRootItem(filter, this.onDidChangeTreeDataEmitter);
+        const filterIssues = new FilterIssuesRootItem(filter, this);
         rootNodes.push(filterIssues);
       });
     }
@@ -63,16 +63,16 @@ abstract class JbsTreeItem extends UpdatableTreeItem<JbsTreeItem> {
   children: JbsTreeItem[] = [];
   constructor(label: string, readonly id: string, collapsibleState: vscode.TreeItemCollapsibleState,
     eagerExpand: boolean, icon: string,
-    onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>, children?: JbsTreeItem[]) {
-    super(label, id, collapsibleState, eagerExpand, onDidChangeTreeDataEmitter, children);
+    provider: JbsProvider, children?: JbsTreeItem[]) {
+    super(label, id, collapsibleState, eagerExpand, provider, children);
     this.iconPath = path.join(__filename, '..', '..', 'media', icon);
   }
 }
 
 class JbsLeafTreeItem extends JbsTreeItem {
   constructor(label: string, id: string, icon: string, targetUrl: string | undefined,
-    onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
-    super(label, id, vscode.TreeItemCollapsibleState.None, false, icon, onDidChangeTreeDataEmitter);
+    provider: JbsProvider) {
+    super(label, id, vscode.TreeItemCollapsibleState.None, false, icon, provider);
     if (targetUrl !== undefined) {
       this.command = {
         command: 'vscode.open',
@@ -93,9 +93,9 @@ class JbsLeafTreeItem extends JbsTreeItem {
 
 class IssuesRootItem extends JbsTreeItem {
   constructor(label: string, id: string, readonly searchQuery: string,
-    onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
+    provider: JbsProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.Expanded, true,
-      'jbs-search.svg', onDidChangeTreeDataEmitter);
+      'jbs-search.svg', provider);
     this.description = '...';
   }
 
@@ -143,7 +143,7 @@ class IssuesRootItem extends JbsTreeItem {
           const issueItem = new IssueTreeItem(issue.key, 'issue-' + this.id + '-' + issue.id, issue.self,
             issue.fields.summary, issue.fields.status.name, issue.fields.issuetype.name, issue.fields.priority.name,
             component, subcomponent, issue.fields.description, updated, issue.fields.labels, assignee, assigneeFullName,
-            fixVersion, this.onDidChangeTreeDataEmitter);
+            fixVersion, this.provider);
           newIssues.push(issueItem);
         }
         resolveJson(newIssues);
@@ -157,9 +157,9 @@ class IssuesRootItem extends JbsTreeItem {
 
 class FilterIssuesRootItem extends IssuesRootItem {
   constructor(readonly filterId: string,
-    onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
+    provider: JbsProvider) {
     super('Issues for filter ' + filterId, 'issue-filter-' + filterId,
-      'jql=filter=' + filterId, onDidChangeTreeDataEmitter);
+      'jql=filter=' + filterId, provider);
   }
 
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
@@ -185,9 +185,9 @@ class IssueTreeItem extends JbsTreeItem {
     readonly labels: string[],
     readonly assignee: string, readonly assigneeFullName: string,
     readonly fixVersion: string | null,
-    onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>) {
+    provider: JbsProvider) {
     super(key + ': ' + summary, issueId, vscode.TreeItemCollapsibleState.Collapsed, false,
-      getStatusIcon(), onDidChangeTreeDataEmitter);
+      getStatusIcon(), provider);
     this.webUrl = 'https://bugs.openjdk.org/browse/' + key;
 
     function getStatusIcon(): string {
@@ -222,33 +222,33 @@ class IssueTreeItem extends JbsTreeItem {
     }
 
     items.push(new JbsLeafTreeItem(`${this.prio} ${this.type} - ${this.status}`,
-      this.issueId + '+info', typeIcon, this.webUrl, this.onDidChangeTreeDataEmitter));
+      this.issueId + '+info', typeIcon, this.webUrl, this.provider));
 
     if (this.desc) {
       items.push(new JbsLeafTreeItem(this.desc,
-        this.issueId + '+desc', 'jbs-description.svg', this.webUrl, this.onDidChangeTreeDataEmitter));
+        this.issueId + '+desc', 'jbs-description.svg', this.webUrl, this.provider));
     }
 
     items.push(new JbsLeafTreeItem(this.component + (this.subcomponent ? '/' + this.subcomponent : ''),
-      this.issueId + '+component', 'github-overview.svg', this.webUrl, this.onDidChangeTreeDataEmitter));
+      this.issueId + '+component', 'github-overview.svg', this.webUrl, this.provider));
 
     if (this.labels.length > 0) {
       items.push(new JbsLeafTreeItem(this.labels.join(' '),
-        this.issueId + '+tags', 'github-tags.svg', this.webUrl, this.onDidChangeTreeDataEmitter));
+        this.issueId + '+tags', 'github-tags.svg', this.webUrl, this.provider));
     }
 
     if (this.assignee) {
       items.push(new JbsLeafTreeItem('@' + this.assignee + ' (' + this.assigneeFullName + ')',
-        this.issueId + '+assignee', 'github-user.svg', this.webUrl, this.onDidChangeTreeDataEmitter));
+        this.issueId + '+assignee', 'github-user.svg', this.webUrl, this.provider));
     }
 
     if (this.fixVersion) {
       items.push(new JbsLeafTreeItem(this.fixVersion,
-        this.issueId + '+fixVersion', 'jbs-target.svg', this.webUrl, this.onDidChangeTreeDataEmitter));
+        this.issueId + '+fixVersion', 'jbs-target.svg', this.webUrl, this.provider));
     }
 
     items.push(new JbsLeafTreeItem(this.updatedAt.toLocaleString(locale),
-      this.issueId + '+date', 'github-time.svg', this.webUrl, this.onDidChangeTreeDataEmitter));
+      this.issueId + '+date', 'github-time.svg', this.webUrl, this.provider));
   }
 
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
@@ -270,7 +270,7 @@ class IssueTreeItem extends JbsTreeItem {
 
           const commentItem = new JbsLeafTreeItem('@' + commentAuthor + ': ' + comment,
             this.issueId + '+comment', 'github-conversation.svg', commentUrl,
-            this.onDidChangeTreeDataEmitter);
+            this.provider);
           commentItems.push(commentItem);
         }
 
@@ -289,7 +289,7 @@ class IssueTreeItem extends JbsTreeItem {
 
             const reviewItem = new JbsLeafTreeItem(summary,
               this.issueId + '+review-' + summary, 'github-pullrequest.svg', reviewUrl,
-              this.onDidChangeTreeDataEmitter);
+              this.provider);
             reviewItems.push(reviewItem);
           }
         }

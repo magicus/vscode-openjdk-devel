@@ -3,6 +3,10 @@ import * as vscode from 'vscode';
 const TIMEOUT_DELAY = 30000;
 
 export abstract class UpdatableProvider<CT extends UpdatableTreeItem<CT>> implements vscode.TreeDataProvider<CT> {
+  private onDidChangeTreeDataEmitter: vscode.EventEmitter<CT | undefined> =
+    new vscode.EventEmitter<CT | undefined>();
+  readonly onDidChangeTreeData: vscode.Event<CT | undefined> = this.onDidChangeTreeDataEmitter.event;
+
   private rootNodes: CT[] = [];
 
   constructor() {
@@ -50,11 +54,7 @@ export abstract class UpdatableProvider<CT extends UpdatableTreeItem<CT>> implem
 
   protected abstract verifySettings(): boolean;
 
-  protected onDidChangeTreeDataEmitter: vscode.EventEmitter<CT | undefined> =
-    new vscode.EventEmitter<CT | undefined>();
-  readonly onDidChangeTreeData: vscode.Event<CT | undefined> = this.onDidChangeTreeDataEmitter.event;
-
-  private signalNeedForScreenRefresh(item?: CT): void {
+  public signalNeedForScreenRefresh(item?: CT): void {
     this.onDidChangeTreeDataEmitter.fire(item);
   }
 }
@@ -70,13 +70,14 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
 
   constructor(label: string, readonly id: string, collapsibleState: vscode.TreeItemCollapsibleState,
     readonly eagerExpand: boolean,
-    protected onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | undefined>, children?: CT[]) {
+    protected provider: any,
+    children?: CT[]) {
     super(label, collapsibleState);
     this.children = children ? children : [];
   }
 
   protected updateViewOnScreen() {
-    this.onDidChangeTreeDataEmitter.fire(this);
+    this.provider.signalNeedForScreenRefresh(this);
   }
 
   public getChildrenAny(): Promise<CT[]> {
