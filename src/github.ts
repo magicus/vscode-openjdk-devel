@@ -5,7 +5,7 @@ import { UpdatableProvider, UpdatableTreeItem  } from './updatable';
 import fetch from 'node-fetch';
 
 
-export class GitHubProvider extends UpdatableProvider<GitHubTreeItem> {
+export class GitHubProvider extends UpdatableProvider {
   private static apiToken: string = '';
   public static apiBase: string = 'https://api.github.com/';
 
@@ -41,7 +41,7 @@ export class GitHubProvider extends UpdatableProvider<GitHubTreeItem> {
     return token !== '' && username !== '' && (labelFilter !== '' || repoFilter !== '');
   }
 
-  protected setupTree(): GitHubTreeItem[] {
+  protected setupTree(): UpdatableTreeItem[] {
     const rootNodes: GitHubTreeItem[] = [];
 
     const alerts = new AlertsRootItem('Notifications', this);
@@ -73,11 +73,11 @@ export class GitHubProvider extends UpdatableProvider<GitHubTreeItem> {
   }
 }
 
-abstract class GitHubTreeItem extends UpdatableTreeItem<GitHubTreeItem> {
+abstract class GitHubTreeItem extends UpdatableTreeItem {
   children: GitHubTreeItem[] = [];
   constructor(label: string, readonly id: string, collapsibleState: vscode.TreeItemCollapsibleState,
     eagerExpand: boolean, icon: string,
-    provider: GitHubProvider, children?: GitHubTreeItem[]) {
+    provider: UpdatableProvider, children?: GitHubTreeItem[]) {
     super(label, id, collapsibleState, eagerExpand, provider, children);
     this.iconPath = path.join(__filename, '..', '..', 'media', icon);
   }
@@ -85,7 +85,7 @@ abstract class GitHubTreeItem extends UpdatableTreeItem<GitHubTreeItem> {
 
 class GitHubLeafTreeItem extends GitHubTreeItem {
   constructor(label: string, id: string, icon: string, targetUrl: string | undefined,
-    provider: GitHubProvider) {
+    provider: UpdatableProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.None, false, icon, provider);
     if (targetUrl !== undefined) {
       this.command = {
@@ -106,7 +106,7 @@ class GitHubLeafTreeItem extends GitHubTreeItem {
 }
 
 class AlertsRootItem extends GitHubTreeItem {
-  constructor(label: string, provider: GitHubProvider) {
+  constructor(label: string, provider: UpdatableProvider) {
     super(label, 'id', vscode.TreeItemCollapsibleState.Expanded, true,
       'github-notification.svg', provider);
     this.description = '...';
@@ -137,7 +137,7 @@ class AlertsRootItem extends GitHubTreeItem {
 class AlertTreeItem extends GitHubTreeItem {
   prWebUrl: string;
   constructor(label: string, id: string, readonly commentUrl: string, readonly prUrl: string, readonly updatedAt: Date,
-      readonly repository: string, provider: GitHubProvider) {
+      readonly repository: string, provider: UpdatableProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false, 'github-item.svg', provider);
     // Technically we should look this up, but keep it simple and just rewrite URL
     this.prWebUrl = this.prUrl.replace(/https:\/\/api\.github\.com\/repos\/(.*\/.*)\/pulls\/(.*)/,
@@ -195,9 +195,8 @@ class AlertTreeItem extends GitHubTreeItem {
 }
 
 class PRsRootItem extends GitHubTreeItem {
-
   constructor(label: string, id: string, readonly searchQuery: string,
-    provider: GitHubProvider) {
+    provider: UpdatableProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.Expanded, true,
       'github-logo.svg', provider);
     this.description = '...';
@@ -251,7 +250,7 @@ class PRTreeItem extends GitHubTreeItem {
   constructor(label: string, id: string, userReadableUrl: string, repo: string,
     prNumber: number, jbsIssues: string[], tags: string, author: string, readonly prUrl: string,
     description: string,
-    provider: GitHubProvider) {
+    provider: UpdatableProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false,
       'github-pullrequest.svg', provider);
     this.tooltip = `${label}\n${repo}#${prNumber} by @${author}`;

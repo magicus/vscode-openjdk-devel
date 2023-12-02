@@ -2,12 +2,13 @@ import * as vscode from 'vscode';
 
 const TIMEOUT_DELAY = 30000;
 
-export abstract class UpdatableProvider<CT extends UpdatableTreeItem<CT>> implements vscode.TreeDataProvider<CT> {
-  private onDidChangeTreeDataEmitter: vscode.EventEmitter<CT | undefined> =
-    new vscode.EventEmitter<CT | undefined>();
-  readonly onDidChangeTreeData: vscode.Event<CT | undefined> = this.onDidChangeTreeDataEmitter.event;
+export abstract class UpdatableProvider implements vscode.TreeDataProvider<UpdatableTreeItem> {
+  private onDidChangeTreeDataEmitter: vscode.EventEmitter<UpdatableTreeItem | undefined> =
+    new vscode.EventEmitter<UpdatableTreeItem | undefined>();
+  readonly onDidChangeTreeData: vscode.Event<UpdatableTreeItem | undefined> =
+    this.onDidChangeTreeDataEmitter.event;
 
-  private rootNodes: CT[] = [];
+  private rootNodes: UpdatableTreeItem[] = [];
 
   constructor() {
     if (!this.verifySettings()) {
@@ -17,11 +18,12 @@ export abstract class UpdatableProvider<CT extends UpdatableTreeItem<CT>> implem
     this.rootNodes = this.setupTree();
   }
 
-  public getTreeItem(element: CT): vscode.TreeItem | Thenable<vscode.TreeItem> {
+  public getTreeItem(element: UpdatableTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
     return element;
   }
 
-  public getChildren(element?: CT | undefined): vscode.ProviderResult<CT[]> {
+  public getChildren(element?: UpdatableTreeItem | undefined):
+    vscode.ProviderResult<UpdatableTreeItem[]> {
     if (element === undefined) {
       return this.rootNodes;
     }
@@ -50,28 +52,28 @@ export abstract class UpdatableProvider<CT extends UpdatableTreeItem<CT>> implem
     this.signalNeedForScreenRefresh();
   }
 
-  protected abstract setupTree(): CT[];
+  protected abstract setupTree(): UpdatableTreeItem[];
 
   protected abstract verifySettings(): boolean;
 
-  public signalNeedForScreenRefresh(item?: CT): void {
+  public signalNeedForScreenRefresh(item?: UpdatableTreeItem): void {
     this.onDidChangeTreeDataEmitter.fire(item);
   }
 }
 
-export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vscode.TreeItem {
+export abstract class UpdatableTreeItem extends vscode.TreeItem {
   private isPopulated: boolean = false;
   private isCurrentlyUpdating: boolean = false;
   private readonly onChangeEmitter: vscode.EventEmitter<undefined> = new vscode.EventEmitter<undefined>();
   private readonly onChange: vscode.Event<undefined> = this.onChangeEmitter.event;
-  protected children: CT[];
+  protected children: UpdatableTreeItem[];
 
   public timeoutDelay: number = TIMEOUT_DELAY;
 
   constructor(label: string, readonly id: string, collapsibleState: vscode.TreeItemCollapsibleState,
     readonly eagerExpand: boolean,
-    protected provider: any,
-    children?: CT[]) {
+    protected provider: UpdatableProvider,
+    children?: UpdatableTreeItem[]) {
     super(label, collapsibleState);
     this.children = children ? children : [];
   }
@@ -80,7 +82,7 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
     this.provider.signalNeedForScreenRefresh(this);
   }
 
-  public getChildrenAny(): Promise<CT[]> {
+  public getChildrenAny(): Promise<UpdatableTreeItem[]> {
     if (!this.isPopulated) {
       if (!this.eagerExpand) {
         // unless we have eager expand, we should wait for the update to
@@ -106,7 +108,7 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
     }
   }
 
-  public reloadFromWeb(userAction: boolean) {
+  public reloadFromWeb(userAction: boolean): void {
     this.isCurrentlyUpdating = true;
     if (userAction) {
       // update to show spinner
@@ -116,19 +118,19 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
     this.updateFromWeb();
   }
 
-  protected abstract loadChildrenArrayFromWeb(): Promise<CT[]>;
+  protected abstract loadChildrenArrayFromWeb(): Promise<UpdatableTreeItem[]>;
 
   protected abstract updateSelfAfterWebLoad(): void;
 
   private updateFromWeb() {
     Promise.race([this.loadChildrenArrayFromWeb(),
-      new Promise<CT[]>((resolve, reject) => {
+      new Promise<UpdatableTreeItem[]>((resolve, reject) => {
         setTimeout(() => {
           reject(new Error(`Request timed out after ${this.timeoutDelay} ms.`));
         }, this.timeoutDelay);
       })])
       .then(loadedArray => {
-        this.updateChildren<CT>(this.children, loadedArray, updatedArray => {
+        this.updateChildren(this.children, loadedArray, updatedArray => {
           if (updatedArray) {
             this.children = updatedArray;
           }
@@ -159,8 +161,8 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
       });
   }
 
-  private updateChildren<CT extends vscode.TreeItem>(oldArray: CT[], newArray: CT[],
-    onUpdate: (updatedArray: CT[] | undefined) => void) {
+  private updateChildren(oldArray: UpdatableTreeItem[], newArray: UpdatableTreeItem[],
+    onUpdate: (updatedArray: UpdatableTreeItem[] | undefined) => void) {
     let updated = false;
     // Remove elements that has disappeared in the newArray
     const updatedArray = oldArray.filter(oldElem => {

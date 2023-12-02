@@ -5,7 +5,7 @@ import { UpdatableProvider, UpdatableTreeItem } from './updatable';
 import fetch from 'node-fetch';
 
 
-export class JbsProvider extends UpdatableProvider<JbsTreeItem> {
+export class JbsProvider extends UpdatableProvider {
   private static apiToken: string = '';
   public static apiBase: string = 'https://bugs.openjdk.org/rest/api/2/';
 
@@ -38,7 +38,7 @@ export class JbsProvider extends UpdatableProvider<JbsTreeItem> {
     return token !== '' && username !== '';
   }
 
-  protected setupTree(): JbsTreeItem[] {
+  protected setupTree(): UpdatableTreeItem[] {
     const rootNodes: JbsTreeItem[] = [];
 
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.username', '');
@@ -59,11 +59,11 @@ export class JbsProvider extends UpdatableProvider<JbsTreeItem> {
   }
 }
 
-abstract class JbsTreeItem extends UpdatableTreeItem<JbsTreeItem> {
+abstract class JbsTreeItem extends UpdatableTreeItem {
   children: JbsTreeItem[] = [];
   constructor(label: string, readonly id: string, collapsibleState: vscode.TreeItemCollapsibleState,
     eagerExpand: boolean, icon: string,
-    provider: JbsProvider, children?: JbsTreeItem[]) {
+    provider: UpdatableProvider, children?: JbsTreeItem[]) {
     super(label, id, collapsibleState, eagerExpand, provider, children);
     this.iconPath = path.join(__filename, '..', '..', 'media', icon);
   }
@@ -71,7 +71,7 @@ abstract class JbsTreeItem extends UpdatableTreeItem<JbsTreeItem> {
 
 class JbsLeafTreeItem extends JbsTreeItem {
   constructor(label: string, id: string, icon: string, targetUrl: string | undefined,
-    provider: JbsProvider) {
+    provider: UpdatableProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.None, false, icon, provider);
     if (targetUrl !== undefined) {
       this.command = {
@@ -93,7 +93,7 @@ class JbsLeafTreeItem extends JbsTreeItem {
 
 class IssuesRootItem extends JbsTreeItem {
   constructor(label: string, id: string, readonly searchQuery: string,
-    provider: JbsProvider) {
+    provider: UpdatableProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.Expanded, true,
       'jbs-search.svg', provider);
     this.description = '...';
@@ -157,7 +157,7 @@ class IssuesRootItem extends JbsTreeItem {
 
 class FilterIssuesRootItem extends IssuesRootItem {
   constructor(readonly filterId: string,
-    provider: JbsProvider) {
+    provider: UpdatableProvider) {
     super('Issues for filter ' + filterId, 'issue-filter-' + filterId,
       'jql=filter=' + filterId, provider);
   }
@@ -185,7 +185,7 @@ class IssueTreeItem extends JbsTreeItem {
     readonly labels: string[],
     readonly assignee: string, readonly assigneeFullName: string,
     readonly fixVersion: string | null,
-    provider: JbsProvider) {
+    provider: UpdatableProvider) {
     super(key + ': ' + summary, issueId, vscode.TreeItemCollapsibleState.Collapsed, false,
       getStatusIcon(), provider);
     this.webUrl = 'https://bugs.openjdk.org/browse/' + key;
