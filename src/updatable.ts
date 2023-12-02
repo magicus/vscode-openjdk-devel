@@ -78,7 +78,8 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
       })
       .catch(failure => {
         console.error(failure);
-        vscode.window.showErrorMessage(failure);
+        vscode.window.showErrorMessage('Error in OpenJDK Dev extension: ' +
+          (failure.message ? failure.message : failure));
       })
       .finally(() => {
         // we are done loading from the web!
