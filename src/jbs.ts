@@ -1,36 +1,9 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { UpdatableProvider, UpdatableTreeItem } from './updatable';
-import fetch from 'node-fetch';
+import { UpdatableProvider, UpdatableTreeItem, UpdatableDownloader } from './updatable';
 
-export class JbsUpdatableDownloader {
-  private static apiToken: string = '';
-  public static apiBase: string = 'https://bugs.openjdk.org/rest/api/2/';
-
-  public static getJBSjson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
-    JbsUpdatableDownloader.apiToken = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.apiToken', '');
-    if (JbsUpdatableDownloader.apiToken === '') {
-      return Promise.reject(new Error('No JBS API Token set'));
-    }
-
-    return new Promise<JbsTreeItem[]>((resolve, reject) => fetch(url, {
-      /* eslint-disable @typescript-eslint/naming-convention */
-      headers: {
-        'Authorization': 'Bearer ' + JbsUpdatableDownloader.apiToken,
-        'User-Agent': 'vscode-openjdk-devel'
-      }
-      /* eslint-enable @typescript-eslint/naming-convention */
-    })
-      .then(res => res.json())
-      .then(json => {
-        processJson(json, resolve, reject);
-      })
-      .catch((error: any) => {
-        reject(new Error('JBS Integration error: ' + error));
-      }));
-  }
-}
+const downloader = new UpdatableDownloader<JbsTreeItem>();
 
 export class JbsProvider extends UpdatableProvider {
   protected verifySettings(): boolean {
@@ -101,7 +74,7 @@ class IssuesRootItem extends JbsTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
-    return JbsUpdatableDownloader.getJBSjson(JbsUpdatableDownloader.apiBase + 'search?' + this.searchQuery,
+    return downloader.getJBSjson(UpdatableDownloader.jbsApiBase + 'search?' + this.searchQuery,
       (json: any, resolveJson: any, rejectJson: any) => {
         const newIssues: IssueTreeItem[] = [];
 
@@ -165,7 +138,7 @@ class FilterIssuesRootItem extends IssuesRootItem {
 
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
     // Update our label
-    JbsUpdatableDownloader.getJBSjson(JbsUpdatableDownloader.apiBase + 'filter/' + this.filterId,
+    downloader.getJBSjson(UpdatableDownloader.jbsApiBase + 'filter/' + this.filterId,
       (json: any, resolveJson: any, rejectJson: any) => {
         var label = json.name;
         this.label = label;
@@ -258,7 +231,7 @@ class IssueTreeItem extends JbsTreeItem {
     this.populateIssue(newIssueInfo);
 
     // Add latest comment
-    const commentPromise = JbsUpdatableDownloader.getJBSjson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
+    const commentPromise = downloader.getJBSjson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
       (json: any, resolveJson: any, rejectJson: any) => {
         const commentItems: JbsTreeItem[] = [];
 
@@ -278,7 +251,7 @@ class IssueTreeItem extends JbsTreeItem {
         resolveJson(commentItems);
       });
 
-    const reviewPromise = JbsUpdatableDownloader.getJBSjson(this.apiUrl + '/remotelink',
+    const reviewPromise = downloader.getJBSjson(this.apiUrl + '/remotelink',
       (json: any, resolveJson: any, rejectJson: any) => {
         const reviewItems: JbsTreeItem[] = [];
 

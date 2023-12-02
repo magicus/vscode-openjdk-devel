@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import fetch from 'node-fetch';
 
 const TIMEOUT_DELAY = 30000;
 
@@ -187,5 +188,57 @@ export abstract class UpdatableTreeItem extends vscode.TreeItem {
     } else {
       onUpdate(undefined);
     }
+  }
+}
+
+export class UpdatableDownloader<T extends UpdatableTreeItem> {
+  private static apiToken: string = '';
+  public static gitHubApiBase: string = 'https://api.github.com/';
+  public static jbsApiBase: string = 'https://bugs.openjdk.org/rest/api/2/';
+
+  public getGHjson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
+    UpdatableDownloader.apiToken = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
+    if (UpdatableDownloader.apiToken === '') {
+      return Promise.reject(new Error('No GitHub API Token set'));
+    }
+
+    return new Promise<T[]>((resolve, reject) => fetch(url, {
+      /* eslint-disable @typescript-eslint/naming-convention */
+      headers: {
+        'Authorization': 'token ' + UpdatableDownloader.apiToken,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'vscode-openjdk-devel'
+      }
+      /* eslint-enable @typescript-eslint/naming-convention */
+    })
+      .then(res => res.json())
+      .then(json => {
+        processJson(json, resolve, reject);
+      })
+      .catch((error: any) => {
+        reject(new Error('GitHub Integration error: ' + error));
+      }));
+  }
+  public getJBSjson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
+    UpdatableDownloader.apiToken = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.apiToken', '');
+    if (UpdatableDownloader.apiToken === '') {
+      return Promise.reject(new Error('No JBS API Token set'));
+    }
+
+    return new Promise<T[]>((resolve, reject) => fetch(url, {
+      /* eslint-disable @typescript-eslint/naming-convention */
+      headers: {
+        'Authorization': 'Bearer ' + UpdatableDownloader.apiToken,
+        'User-Agent': 'vscode-openjdk-devel'
+      }
+      /* eslint-enable @typescript-eslint/naming-convention */
+    })
+      .then(res => res.json())
+      .then(json => {
+        processJson(json, resolve, reject);
+      })
+      .catch((error: any) => {
+        reject(new Error('JBS Integration error: ' + error));
+      }));
   }
 }
