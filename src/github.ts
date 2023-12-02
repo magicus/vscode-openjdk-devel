@@ -1,11 +1,11 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { UpdatableTreeItem } from './updatable';
+import { UpdatableProvider, UpdatableTreeItem  } from './updatable';
 import fetch from 'node-fetch';
 
 
-export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
+export class GitHubProvider extends UpdatableProvider<GitHubTreeItem> {
   private static apiToken: string = '';
   public static apiBase: string = 'https://api.github.com/';
 
@@ -33,34 +33,30 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
       }));
   }
 
-  private onDidChangeTreeDataEmitter: vscode.EventEmitter<GitHubTreeItem | undefined> =
-    new vscode.EventEmitter<GitHubTreeItem | undefined>();
-  readonly onDidChangeTreeData: vscode.Event<GitHubTreeItem | undefined> = this.onDidChangeTreeDataEmitter.event;
-
-  private rootNodes: GitHubTreeItem[] = [];
-
-  constructor() {
-    if (!this.verifySettings()) {
-      // An empty root set will trigger the welcome view
-      return;
-    }
-    this.setupTree();
+  protected verifySettings(): boolean {
+    const token = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
+    const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
+    const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
+    const repoFilter = vscode.workspace.getConfiguration('openjdkDevel').get('repoFilter', '');
+    return token !== '' && username !== '' && (labelFilter !== '' || repoFilter !== '');
   }
 
-  setupTree() {
+  protected setupTree(): GitHubTreeItem[] {
+    const rootNodes: GitHubTreeItem[] = [];
+
     const alerts = new AlertsRootItem('Notifications', this.onDidChangeTreeDataEmitter);
-    this.rootNodes.push(alerts);
+    rootNodes.push(alerts);
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
     const myPRs = new PRsRootItem('My PRs', 'id-my-prs', 'is:open+is:pr+archived:false+org:openjdk+author:' + username,
       this.onDidChangeTreeDataEmitter);
-    this.rootNodes.push(myPRs);
+    rootNodes.push(myPRs);
 
     const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
     if (labelFilter !== '') {
       const labelPRs = new PRsRootItem('PRs for ' + labelFilter, 'id-open-prs-labels',
         'is:open+is:pr+archived:false+label:rfr+org:openjdk+label:' + labelFilter,
         this.onDidChangeTreeDataEmitter);
-      this.rootNodes.push(labelPRs);
+      rootNodes.push(labelPRs);
     }
 
     const repoFilter: string = vscode.workspace.getConfiguration('openjdkDevel').get('repoFilter', '');
@@ -69,54 +65,11 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
         const repoPRs = new PRsRootItem('PRs for ' + repo, 'id-open-prs-repo-' + repo,
           'is:open+is:pr+archived:false+label:rfr+repo:openjdk/' + repo,
           this.onDidChangeTreeDataEmitter);
-        this.rootNodes.push(repoPRs);
+        rootNodes.push(repoPRs);
       });
     }
-  }
 
-  getTreeItem(element: GitHubTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
-    return element;
-  }
-
-  getChildren(element?: GitHubTreeItem | undefined): vscode.ProviderResult<GitHubTreeItem[]> {
-    if (element === undefined) {
-      return this.rootNodes;
-    }
-    return element.getChildrenAny();
-  }
-
-  verifySettings(): boolean {
-    const token = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
-    const username = vscode.workspace.getConfiguration('openjdkDevel').get('github.username', '');
-    const labelFilter = vscode.workspace.getConfiguration('openjdkDevel').get('labelFilter', '');
-    const repoFilter = vscode.workspace.getConfiguration('openjdkDevel').get('repoFilter', '');
-    return token !== '' && username !== '' && (labelFilter !== '' || repoFilter !== '');
-  }
-
-  userRefresh(forceReload?: boolean) {
-    if (!this.verifySettings()) {
-      // An empty root set will trigger the welcome view
-      // Yes, setting length to 0 is valid javascript...
-      this.rootNodes.length = 0;
-      this.signalNeedForScreenRefresh();
-      return;
-    }
-
-    if (forceReload) {
-      // Remove all root nodes and recreate them below
-      this.rootNodes.length = 0;
-    }
-
-    if (this.rootNodes.length === 0) {
-      this.setupTree();
-    }
-
-    this.rootNodes.forEach(node => node.reloadFromWeb(true));
-    this.signalNeedForScreenRefresh();
-  }
-
-  signalNeedForScreenRefresh(item?: GitHubTreeItem): void {
-    this.onDidChangeTreeDataEmitter.fire(item);
+    return rootNodes;
   }
 }
 

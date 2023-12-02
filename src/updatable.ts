@@ -2,6 +2,63 @@ import * as vscode from 'vscode';
 
 const TIMEOUT_DELAY = 30000;
 
+export abstract class UpdatableProvider<CT extends UpdatableTreeItem<CT>> implements vscode.TreeDataProvider<CT> {
+  private rootNodes: CT[] = [];
+
+  constructor() {
+    if (!this.verifySettings()) {
+      // An empty root set will trigger the welcome view
+      return;
+    }
+    this.rootNodes = this.setupTree();
+  }
+
+  public getTreeItem(element: CT): vscode.TreeItem | Thenable<vscode.TreeItem> {
+    return element;
+  }
+
+  public getChildren(element?: CT | undefined): vscode.ProviderResult<CT[]> {
+    if (element === undefined) {
+      return this.rootNodes;
+    }
+    return element.getChildrenAny();
+  }
+
+  public userRefresh(forceReload?: boolean) {
+    if (!this.verifySettings()) {
+      // An empty root set will trigger the welcome view
+      // Yes, setting length to 0 is valid javascript...
+      this.rootNodes.length = 0;
+      this.signalNeedForScreenRefresh();
+      return;
+    }
+
+    if (forceReload) {
+      // Remove all root nodes and recreate them below
+      this.rootNodes.length = 0;
+    }
+
+    if (this.rootNodes.length === 0) {
+      this.setupTree();
+    }
+
+    this.rootNodes.forEach(node => node.reloadFromWeb(true));
+    this.signalNeedForScreenRefresh();
+  }
+
+  protected abstract setupTree(): CT[];
+
+  protected abstract verifySettings(): boolean;
+
+  protected onDidChangeTreeDataEmitter: vscode.EventEmitter<CT | undefined> =
+    new vscode.EventEmitter<CT | undefined>();
+  readonly onDidChangeTreeData: vscode.Event<CT | undefined> = this.onDidChangeTreeDataEmitter.event;
+
+  private signalNeedForScreenRefresh(item?: CT): void {
+    this.onDidChangeTreeDataEmitter.fire(item);
+  }
+}
+
 export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vscode.TreeItem {
   private isPopulated: boolean = false;
   private isCurrentlyUpdating: boolean = false;
