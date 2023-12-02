@@ -2,34 +2,6 @@ import * as vscode from 'vscode';
 
 const TIMEOUT_DELAY = 30000;
 
-function updateChildren<CT extends vscode.TreeItem>(oldArray: CT[], newArray: CT[],
-  onUpdate: (updatedArray: CT[] | undefined) => void) {
-  let updated = false;
-  // Remove elements that has disappeared in the newArray
-  const updatedArray = oldArray.filter(oldElem => {
-    const isInNew = newArray.find(newElem => newElem.id === oldElem.id);
-    if (!isInNew) {
-      // Element will be removed, so flag updatedArray as changed
-      updated = true;
-    }
-    return isInNew;
-  });
-
-  // Add new elements that is not in the oldArray
-  newArray.forEach(newElem => {
-    if (!oldArray.find(oldElem => oldElem.id === newElem.id)) {
-      updated = true;
-      updatedArray.push(newElem);
-    }
-  });
-
-  if (updated) {
-    onUpdate(updatedArray);
-  } else {
-    onUpdate(undefined);
-  }
-}
-
 export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vscode.TreeItem {
   private isPopulated: boolean = false;
   private isCurrentlyUpdating: boolean = false;
@@ -98,7 +70,7 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
         }, this.timeoutDelay);
       })])
       .then(loadedArray => {
-        updateChildren<CT>(this.children, loadedArray, updatedArray => {
+        this.updateChildren<CT>(this.children, loadedArray, updatedArray => {
           if (updatedArray) {
             this.children = updatedArray;
           }
@@ -126,5 +98,33 @@ export abstract class UpdatableTreeItem<CT extends vscode.TreeItem> extends vsco
           this.updateViewOnScreen();
         }
       });
+  }
+
+  private updateChildren<CT extends vscode.TreeItem>(oldArray: CT[], newArray: CT[],
+    onUpdate: (updatedArray: CT[] | undefined) => void) {
+    let updated = false;
+    // Remove elements that has disappeared in the newArray
+    const updatedArray = oldArray.filter(oldElem => {
+      const isInNew = newArray.find(newElem => newElem.id === oldElem.id);
+      if (!isInNew) {
+        // Element will be removed, so flag updatedArray as changed
+        updated = true;
+      }
+      return isInNew;
+    });
+
+    // Add new elements that is not in the oldArray
+    newArray.forEach(newElem => {
+      if (!oldArray.find(oldElem => oldElem.id === newElem.id)) {
+        updated = true;
+        updatedArray.push(newElem);
+      }
+    });
+
+    if (updated) {
+      onUpdate(updatedArray);
+    } else {
+      onUpdate(undefined);
+    }
   }
 }
