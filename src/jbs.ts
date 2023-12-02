@@ -1,11 +1,11 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { UpdatableTreeItem } from './updatable';
+import { UpdatableProvider, UpdatableTreeItem } from './updatable';
 import fetch from 'node-fetch';
 
 
-export class JbsProvider implements vscode.TreeDataProvider<JbsTreeItem> {
+export class JbsProvider extends UpdatableProvider<JbsTreeItem> {
   private static apiToken: string = '';
   public static apiBase: string = 'https://bugs.openjdk.org/rest/api/2/';
 
@@ -32,77 +32,30 @@ export class JbsProvider implements vscode.TreeDataProvider<JbsTreeItem> {
       }));
   }
 
-  private onDidChangeTreeDataEmitter: vscode.EventEmitter<JbsTreeItem | undefined> =
-    new vscode.EventEmitter<JbsTreeItem | undefined>();
-  readonly onDidChangeTreeData: vscode.Event<JbsTreeItem | undefined> = this.onDidChangeTreeDataEmitter.event;
-
-  private rootNodes: JbsTreeItem[] = [];
-
-  constructor() {
-    if (!this.verifySettings()) {
-      // An empty root set will trigger the welcome view
-      return;
-    }
-    this.setupTree();
+  protected verifySettings(): boolean {
+    const token = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.apiToken', '');
+    const username = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.username', '');
+    return token !== '' && username !== '';
   }
 
-  setupTree() {
+  protected setupTree(): JbsTreeItem[] {
+    const rootNodes: JbsTreeItem[] = [];
+
     const username = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.username', '');
     const myIssues = new IssuesRootItem('My open issues', 'issues-mine', 'jql=assignee%3D' + username
       + '%20and%20resolution%3Dunresolved%20order%20by%20updated%20desc', this.onDidChangeTreeDataEmitter);
-    this.rootNodes.push(myIssues);
+    rootNodes.push(myIssues);
 
     const jbsFilter: string = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.filters', '');
 
     if (jbsFilter !== '') {
       jbsFilter.split(',').forEach(filter => {
         const filterIssues = new FilterIssuesRootItem(filter, this.onDidChangeTreeDataEmitter);
-        this.rootNodes.push(filterIssues);
+        rootNodes.push(filterIssues);
       });
     }
-  }
 
-  getTreeItem(element: JbsTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
-    return element;
-  }
-
-  getChildren(element?: JbsTreeItem | undefined): vscode.ProviderResult<JbsTreeItem[]> {
-    if (element === undefined) {
-      return this.rootNodes;
-    }
-    return element.getChildrenAny();
-  }
-
-  verifySettings(): boolean {
-    const token = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.apiToken', '');
-    const username = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.username', '');
-    return token !== '' && username !== '';
-  }
-
-  userRefresh(forceReload?: boolean) {
-    if (!this.verifySettings()) {
-      // An empty root set will trigger the welcome view
-      // Yes, setting length to 0 is valid javascript...
-      this.rootNodes.length = 0;
-      this.signalNeedForScreenRefresh();
-      return;
-    }
-
-    if (forceReload) {
-      // Remove all root nodes and recreate them below
-      this.rootNodes.length = 0;
-    }
-
-    if (this.rootNodes.length === 0) {
-      this.setupTree();
-    }
-
-    this.rootNodes.forEach(node => node.reloadFromWeb(true));
-    this.signalNeedForScreenRefresh();
-  }
-
-  signalNeedForScreenRefresh(item?: JbsTreeItem): void {
-    this.onDidChangeTreeDataEmitter.fire(item);
+    return rootNodes;
   }
 }
 
