@@ -221,18 +221,27 @@ export class UpdatableDownloader<T extends UpdatableTreeItem> {
     return allHeaders;
   }
 
-  public getJson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
+  public getJson(url: string,
+    processJson: (json: any) => Promise<T[]>,
+    processError?: (error: Error) => Promise<T[]>): Promise<T[]> {
     try {
       const headers: Record<string, string> = this.getHeaders();
 
-      return new Promise<T[]>((resolve, reject) => fetch(url, { headers: headers })
-        .then(res => res.json())
-        .then(json => {
-          processJson(json, resolve, reject);
+      return fetch(url, { headers: headers })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Server response: ${res.statusText} for ${url}`);
+          }
+          return res.json();
         })
-        .catch((error: any) => {
-          reject(new Error('UpdatableDownloader error: ' + error));
-        }));
+        .then(json => processJson(json))
+        .catch((error: Error) => {
+          console.error('UpdatableDownloader error: ' + error);
+          if (processError) {
+            return processError(error);
+          }
+          return Promise.reject(error);
+        });
     } catch (error) {
       return Promise.reject(error);
     }

@@ -107,7 +107,7 @@ class AlertsRootItem extends GitHubTreeItem {
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
     return downloader.getJson(GitHubUpdatableDownloader.gitHubApiBase + 'notifications',
-      (json: any, resolveJson: any, rejectJson: any) => {
+      (json: any): Promise<GitHubTreeItem[]> => {
         const newAlerts: AlertTreeItem[] = [];
 
         for (const alert of json) {
@@ -118,7 +118,7 @@ class AlertsRootItem extends GitHubTreeItem {
             newAlerts.push(notInfo);
           }
         }
-        resolveJson(newAlerts);
+        return Promise.resolve(newAlerts);;
       });
   }
 
@@ -159,22 +159,23 @@ class AlertTreeItem extends GitHubTreeItem {
     const newCommentInfo: GitHubTreeItem[] = [];
 
     if (this.commentUrl !== null) {
-      return downloader.getJson(this.commentUrl, (comment: any, resolveJson: any, rejectJson: any) => {
-        // Stupid cleaning of html tags; will likely work ok since GitHub does the real work for us
-        const cleanedComment = comment.body.replace(/<\/?[^>]+(>|$)/g, '').trim();
+      return downloader.getJson(this.commentUrl,
+        (comment: any): Promise<GitHubTreeItem[]> => {
+          // Stupid cleaning of html tags; will likely work ok since GitHub does the real work for us
+          const cleanedComment = comment.body.replace(/<\/?[^>]+(>|$)/g, '').trim();
 
-        const commentItem = new GitHubLeafTreeItem(cleanedComment.replace(/\s+/g, ' '),
-          this.commentUrl + '+comment', 'github-conversation.svg', this.prWebUrl, this.provider);
-        commentItem.tooltip = new vscode.MarkdownString(comment.body);
-        newCommentInfo.push(commentItem);
+          const commentItem = new GitHubLeafTreeItem(cleanedComment.replace(/\s+/g, ' '),
+            this.commentUrl + '+comment', 'github-conversation.svg', this.prWebUrl, this.provider);
+          commentItem.tooltip = new vscode.MarkdownString(comment.body);
+          newCommentInfo.push(commentItem);
 
-        newCommentInfo.push(new GitHubLeafTreeItem(comment.user.login,
-          this.commentUrl + '+username', 'github-user.svg', this.prWebUrl, this.provider));
+          newCommentInfo.push(new GitHubLeafTreeItem(comment.user.login,
+            this.commentUrl + '+username', 'github-user.svg', this.prWebUrl, this.provider));
 
-        this.fillInTimeStampAndPR(newCommentInfo);
+          this.fillInTimeStampAndPR(newCommentInfo);
 
-        resolveJson(newCommentInfo);
-      });
+          return Promise.resolve(newCommentInfo);
+        });
     } else {
       this.fillInTimeStampAndPR(newCommentInfo);
 
@@ -197,7 +198,8 @@ class PRsRootItem extends GitHubTreeItem {
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
     return downloader.getJson(GitHubUpdatableDownloader.gitHubApiBase +
-      'search/issues?q=' + this.searchQuery, (json: any, resolveJson: any, rejectJson: any) => {
+      'search/issues?q=' + this.searchQuery,
+    (json: any): Promise<GitHubTreeItem[]> => {
       const items = json.items;
       const newPRs: PRTreeItem[] = [];
 
@@ -226,7 +228,7 @@ class PRsRootItem extends GitHubTreeItem {
         newPRs.push(itemInfo);
       }
 
-      resolveJson(newPRs);
+      return Promise.resolve(newPRs);
     });
   }
 
@@ -275,10 +277,11 @@ class PRTreeItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return downloader.getJson(this.prUrl, (json: any, resolveJson: any, rejectJson: any) => {
-      this.diffItem.label = `+${json.additions} -${json.deletions}, ${json.changed_files} changed files`;
-      resolveJson(this.generated);
-    });
+    return downloader.getJson(this.prUrl,
+      (json: any): Promise<GitHubTreeItem[]> => {
+        this.diffItem.label = `+${json.additions} -${json.deletions}, ${json.changed_files} changed files`;
+        return Promise.resolve(this.generated);
+      });
   }
 
   protected updateSelfAfterWebLoad(): void {

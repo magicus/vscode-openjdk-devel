@@ -89,7 +89,7 @@ class IssuesRootItem extends JbsTreeItem {
 
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
     return downloader.getJson(JbsUpdatableDownloader.jbsApiBase + 'search?' + this.searchQuery,
-      (json: any, resolveJson: any, rejectJson: any) => {
+      (json: any): Promise<JbsTreeItem[]> => {
         const newIssues: IssueTreeItem[] = [];
 
         for (const issue of json.issues) {
@@ -134,7 +134,7 @@ class IssuesRootItem extends JbsTreeItem {
             fixVersion, this.provider);
           newIssues.push(issueItem);
         }
-        resolveJson(newIssues);
+        return Promise.resolve(newIssues);
       });
   }
 
@@ -153,9 +153,10 @@ class FilterIssuesRootItem extends IssuesRootItem {
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
     // Update our label
     downloader.getJson(JbsUpdatableDownloader.jbsApiBase + 'filter/' + this.filterId,
-      (json: any, resolveJson: any, rejectJson: any) => {
+      (json: any): Promise<JbsTreeItem[]> => {
         var label = json.name;
         this.label = label;
+        return Promise.resolve([]); // ignored
       });
 
     return super.loadChildrenArrayFromWeb();
@@ -246,7 +247,7 @@ class IssueTreeItem extends JbsTreeItem {
 
     // Add latest comment
     const commentPromise = downloader.getJson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
-      (json: any, resolveJson: any, rejectJson: any) => {
+      (json: any): Promise<JbsTreeItem[]> => {
         const commentItems: JbsTreeItem[] = [];
 
         if (json.comments.length > 0) {
@@ -262,11 +263,11 @@ class IssueTreeItem extends JbsTreeItem {
           commentItems.push(commentItem);
         }
 
-        resolveJson(commentItems);
+        return Promise.resolve(commentItems);
       });
 
     const reviewPromise = downloader.getJson(this.apiUrl + '/remotelink',
-      (json: any, resolveJson: any, rejectJson: any) => {
+      (json: any): Promise<JbsTreeItem[]> => {
         const reviewItems: JbsTreeItem[] = [];
 
         for (const link of json) {
@@ -282,7 +283,7 @@ class IssueTreeItem extends JbsTreeItem {
           }
         }
 
-        resolveJson(reviewItems);
+        return Promise.resolve(reviewItems);
       });
 
     // This dance is needed to keep the items in the same order all the time
