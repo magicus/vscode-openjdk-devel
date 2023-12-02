@@ -3,7 +3,21 @@ import * as vscode from 'vscode';
 
 import { UpdatableProvider, UpdatableTreeItem, UpdatableDownloader } from './updatable';
 
-const downloader = new UpdatableDownloader<JbsTreeItem>();
+class JbsUpdatableDownloader extends UpdatableDownloader<JbsTreeItem> {
+  public static jbsApiBase: string = 'https://bugs.openjdk.org/rest/api/2/';
+
+  protected getAuthorization(): string | undefined {
+    const apiToken: string = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.apiToken', '');
+
+    if (apiToken === '') {
+      throw new Error('No JBS API Token set');
+    }
+
+    return 'Bearer ' + apiToken;
+  }
+}
+
+const downloader = new JbsUpdatableDownloader();
 
 export class JbsProvider extends UpdatableProvider {
   protected verifySettings(): boolean {
@@ -74,7 +88,7 @@ class IssuesRootItem extends JbsTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
-    return downloader.getJBSjson(UpdatableDownloader.jbsApiBase + 'search?' + this.searchQuery,
+    return downloader.getJson(JbsUpdatableDownloader.jbsApiBase + 'search?' + this.searchQuery,
       (json: any, resolveJson: any, rejectJson: any) => {
         const newIssues: IssueTreeItem[] = [];
 
@@ -138,7 +152,7 @@ class FilterIssuesRootItem extends IssuesRootItem {
 
   protected loadChildrenArrayFromWeb(): Promise<JbsTreeItem[]> {
     // Update our label
-    downloader.getJBSjson(UpdatableDownloader.jbsApiBase + 'filter/' + this.filterId,
+    downloader.getJson(JbsUpdatableDownloader.jbsApiBase + 'filter/' + this.filterId,
       (json: any, resolveJson: any, rejectJson: any) => {
         var label = json.name;
         this.label = label;
@@ -231,7 +245,7 @@ class IssueTreeItem extends JbsTreeItem {
     this.populateIssue(newIssueInfo);
 
     // Add latest comment
-    const commentPromise = downloader.getJBSjson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
+    const commentPromise = downloader.getJson(this.apiUrl + '/comment?orderBy=-created&maxResults=0',
       (json: any, resolveJson: any, rejectJson: any) => {
         const commentItems: JbsTreeItem[] = [];
 
@@ -251,7 +265,7 @@ class IssueTreeItem extends JbsTreeItem {
         resolveJson(commentItems);
       });
 
-    const reviewPromise = downloader.getJBSjson(this.apiUrl + '/remotelink',
+    const reviewPromise = downloader.getJson(this.apiUrl + '/remotelink',
       (json: any, resolveJson: any, rejectJson: any) => {
         const reviewItems: JbsTreeItem[] = [];
 

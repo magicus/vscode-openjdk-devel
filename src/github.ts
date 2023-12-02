@@ -1,9 +1,29 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { UpdatableProvider, UpdatableTreeItem, UpdatableDownloader  } from './updatable';
+import { UpdatableProvider, UpdatableTreeItem, UpdatableDownloader } from './updatable';
 
-const downloader = new UpdatableDownloader<GitHubTreeItem>();
+class GitHubUpdatableDownloader extends UpdatableDownloader<GitHubTreeItem> {
+  public static gitHubApiBase: string = 'https://api.github.com/';
+
+  protected getAuthorization(): string | undefined {
+    const apiToken: string = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
+
+    if (apiToken === '') {
+      throw new Error('No GitHub API Token set');
+    }
+
+    return 'token ' + apiToken;
+  }
+
+  protected getExtraHeaders(): Record<string, string> | undefined {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    return { 'Accept': 'application/vnd.github.v3+json' };
+    /* eslint-enable @typescript-eslint/naming-convention */
+  }
+}
+
+const downloader = new GitHubUpdatableDownloader();
 
 export class GitHubProvider extends UpdatableProvider {
   protected verifySettings(): boolean {
@@ -64,7 +84,7 @@ class GitHubLeafTreeItem extends GitHubTreeItem {
       this.command = {
         command: 'vscode.open',
         title: 'Open in Browser',
-        arguments: [ vscode.Uri.parse(targetUrl) ]
+        arguments: [vscode.Uri.parse(targetUrl)]
       };
     }
   }
@@ -86,7 +106,7 @@ class AlertsRootItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return downloader.getGHjson(UpdatableDownloader.gitHubApiBase + 'notifications',
+    return downloader.getJson(GitHubUpdatableDownloader.gitHubApiBase + 'notifications',
       (json: any, resolveJson: any, rejectJson: any) => {
         const newAlerts: AlertTreeItem[] = [];
 
@@ -110,7 +130,7 @@ class AlertsRootItem extends GitHubTreeItem {
 class AlertTreeItem extends GitHubTreeItem {
   prWebUrl: string;
   constructor(label: string, id: string, readonly commentUrl: string, readonly prUrl: string, readonly updatedAt: Date,
-      readonly repository: string, provider: UpdatableProvider) {
+    readonly repository: string, provider: UpdatableProvider) {
     super(label, id, vscode.TreeItemCollapsibleState.Collapsed, false, 'github-item.svg', provider);
     // Technically we should look this up, but keep it simple and just rewrite URL
     this.prWebUrl = this.prUrl.replace(/https:\/\/api\.github\.com\/repos\/(.*\/.*)\/pulls\/(.*)/,
@@ -139,7 +159,7 @@ class AlertTreeItem extends GitHubTreeItem {
     const newCommentInfo: GitHubTreeItem[] = [];
 
     if (this.commentUrl !== null) {
-      return downloader.getGHjson(this.commentUrl, (comment: any, resolveJson: any, rejectJson: any) => {
+      return downloader.getJson(this.commentUrl, (comment: any, resolveJson: any, rejectJson: any) => {
         // Stupid cleaning of html tags; will likely work ok since GitHub does the real work for us
         const cleanedComment = comment.body.replace(/<\/?[^>]+(>|$)/g, '').trim();
 
@@ -176,9 +196,8 @@ class PRsRootItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return downloader.getGHjson(UpdatableDownloader.gitHubApiBase +
-      'search/issues?q=' + this.searchQuery,
-    (json: any, resolveJson: any, rejectJson: any) => {
+    return downloader.getJson(GitHubUpdatableDownloader.gitHubApiBase +
+      'search/issues?q=' + this.searchQuery, (json: any, resolveJson: any, rejectJson: any) => {
       const items = json.items;
       const newPRs: PRTreeItem[] = [];
 
@@ -256,7 +275,7 @@ class PRTreeItem extends GitHubTreeItem {
   }
 
   protected loadChildrenArrayFromWeb(): Promise<GitHubTreeItem[]> {
-    return downloader.getGHjson(this.prUrl, (json: any, resolveJson: any, rejectJson: any) => {
+    return downloader.getJson(this.prUrl, (json: any, resolveJson: any, rejectJson: any) => {
       this.diffItem.label = `+${json.additions} -${json.deletions}, ${json.changed_files} changed files`;
       resolveJson(this.generated);
     });

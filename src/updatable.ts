@@ -192,53 +192,49 @@ export abstract class UpdatableTreeItem extends vscode.TreeItem {
 }
 
 export class UpdatableDownloader<T extends UpdatableTreeItem> {
-  private static apiToken: string = '';
-  public static gitHubApiBase: string = 'https://api.github.com/';
-  public static jbsApiBase: string = 'https://bugs.openjdk.org/rest/api/2/';
-
-  public getGHjson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
-    UpdatableDownloader.apiToken = vscode.workspace.getConfiguration('openjdkDevel').get('github.apiToken', '');
-    if (UpdatableDownloader.apiToken === '') {
-      return Promise.reject(new Error('No GitHub API Token set'));
-    }
-
-    return new Promise<T[]>((resolve, reject) => fetch(url, {
-      /* eslint-disable @typescript-eslint/naming-convention */
-      headers: {
-        'Authorization': 'token ' + UpdatableDownloader.apiToken,
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'vscode-openjdk-devel'
-      }
-      /* eslint-enable @typescript-eslint/naming-convention */
-    })
-      .then(res => res.json())
-      .then(json => {
-        processJson(json, resolve, reject);
-      })
-      .catch((error: any) => {
-        reject(new Error('GitHub Integration error: ' + error));
-      }));
+  protected getAuthorization(): string | undefined {
+    return undefined;
   }
-  public getJBSjson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
-    UpdatableDownloader.apiToken = vscode.workspace.getConfiguration('openjdkDevel').get('jbs.apiToken', '');
-    if (UpdatableDownloader.apiToken === '') {
-      return Promise.reject(new Error('No JBS API Token set'));
+
+  protected getExtraHeaders(): Record<string, string> | undefined {
+    return undefined;
+  }
+
+  private getHeaders(): Record<string, string> {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    var allHeaders: Record<string, string> = {
+      'User-Agent': 'vscode-openjdk-devel'
+    };
+    /* eslint-enable @typescript-eslint/naming-convention */
+
+    var auth = this.getAuthorization();
+    if (auth) {
+      /* eslint-disable @typescript-eslint/naming-convention */
+      allHeaders = { ...allHeaders, 'Authorization': auth };
+      /* eslint-enable @typescript-eslint/naming-convention */
     }
 
-    return new Promise<T[]>((resolve, reject) => fetch(url, {
-      /* eslint-disable @typescript-eslint/naming-convention */
-      headers: {
-        'Authorization': 'Bearer ' + UpdatableDownloader.apiToken,
-        'User-Agent': 'vscode-openjdk-devel'
-      }
-      /* eslint-enable @typescript-eslint/naming-convention */
-    })
-      .then(res => res.json())
-      .then(json => {
-        processJson(json, resolve, reject);
-      })
-      .catch((error: any) => {
-        reject(new Error('JBS Integration error: ' + error));
-      }));
+    var extraHeaders = this.getExtraHeaders();
+    if (extraHeaders !== undefined) {
+      allHeaders = { ...allHeaders, ...extraHeaders };
+    }
+    return allHeaders;
+  }
+
+  public getJson(url: string, processJson: (json: any, resolveJson: any, rejectJson: any) => void) {
+    try {
+      const headers: Record<string, string> = this.getHeaders();
+
+      return new Promise<T[]>((resolve, reject) => fetch(url, { headers: headers })
+        .then(res => res.json())
+        .then(json => {
+          processJson(json, resolve, reject);
+        })
+        .catch((error: any) => {
+          reject(new Error('UpdatableDownloader error: ' + error));
+        }));
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 }
