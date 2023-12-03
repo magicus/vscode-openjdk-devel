@@ -2,11 +2,16 @@ import * as vscode from 'vscode';
 
 import { GitHubProvider } from './github';
 import { JbsProvider } from './jbs';
+import { DownloadableContentProvider } from './downloading';
+
+export const downloadableContentProvider = new DownloadableContentProvider('openjdk-dev-dl');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Loading extension "OpenJDK Development"');
+
+  downloadableContentProvider.register(context);
 
   const githubProvider = new GitHubProvider();
   vscode.window.createTreeView('gitHubIntegration', {

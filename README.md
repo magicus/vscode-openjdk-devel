@@ -45,6 +45,13 @@ This extension contributes the following commands:
 
 ## Release Notes
 
+### 2.0.2
+
+Add ability to open the PR diff as an editor in VS Code. I highly recommend
+complementing this functionality with a plugin for viewing diff files, such as
+[Diff Viewer](
+https://marketplace.visualstudio.com/items?itemName=caponetto.vscode-diff-viewer).
+
 ### 2.0.1
 
 Added "Collapse all" button to tree views.

@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 
 import { UpdatableProvider, UpdatableTreeItem } from './updatable';
 import { JsonDownloader } from './downloading';
+import { downloadableContentProvider } from './extension';
 
 class GitHubUpdatableDownloader extends JsonDownloader<GitHubTreeItem> {
   public static gitHubApiBase: string = 'https://api.github.com/';
@@ -253,21 +254,27 @@ class PRTreeItem extends GitHubTreeItem {
     const prUrlBase = `https://github.com/${repo}/pull/${prNumber}`;
 
     this.generated.push(new GitHubLeafTreeItem(`${repo}#${prNumber} by @${author}`, 'goto' + id,
-      'github-overview.svg', prUrlBase, provider));
+      'github-overview.svg', prUrlBase + '/files', provider));
 
     const descItem = new GitHubLeafTreeItem(description.replace(/\s+/g, ' '), 'desc' + id,
       'github-conversation.svg', prUrlBase, provider);
     descItem.tooltip = new vscode.MarkdownString(description);
     this.generated.push(descItem);
 
+    var mainJbsIssue = undefined;
     for (const jbsIssue of jbsIssues) {
+      if (mainJbsIssue === undefined) {
+        mainJbsIssue = jbsIssue;
+      }
       this.generated.push(new GitHubLeafTreeItem(jbsIssue, 'jbs' + id + '-' + jbsIssue,
         'github-bug.svg', 'https://bugs.openjdk.java.net/browse/' + jbsIssue, provider));
     }
 
     // Diff description must be complemented from prUrl, which can only be done later
+    const editorViewUrl = downloadableContentProvider.getDownloadableUrl(prUrlBase + '.diff',
+      mainJbsIssue + '.diff');
     this.diffItem = new GitHubLeafTreeItem('Diff', 'diff' + id, 'github-diff.svg',
-      prUrlBase + '/files', provider);
+      editorViewUrl, provider);
     this.generated.push(this.diffItem);
 
     if (tags) {
