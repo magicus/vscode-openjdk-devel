@@ -1,9 +1,10 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { UpdatableProvider, UpdatableTreeItem, UpdatableDownloader } from './updatable';
+import { UpdatableProvider, UpdatableTreeItem } from './updatable';
+import { JsonDownloader } from './downloading';
 
-class JbsUpdatableDownloader extends UpdatableDownloader<JbsTreeItem> {
+class JbsUpdatableDownloader extends JsonDownloader<JbsTreeItem> {
   public static jbsApiBase: string = 'https://bugs.openjdk.org/rest/api/2/';
 
   protected getAuthorization(): string | undefined {

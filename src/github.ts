@@ -1,9 +1,10 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { UpdatableProvider, UpdatableTreeItem, UpdatableDownloader } from './updatable';
+import { UpdatableProvider, UpdatableTreeItem } from './updatable';
+import { JsonDownloader } from './downloading';
 
-class GitHubUpdatableDownloader extends UpdatableDownloader<GitHubTreeItem> {
+class GitHubUpdatableDownloader extends JsonDownloader<GitHubTreeItem> {
   public static gitHubApiBase: string = 'https://api.github.com/';
 
   protected getAuthorization(): string | undefined {
