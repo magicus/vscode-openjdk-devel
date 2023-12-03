@@ -1,6 +1,6 @@
 {
   "name": "openjdk-devel",
-  "version": "2.0.2",
+  "version": "2.0.2.1",
   "displayName": "OpenJDK Development",
   "description": "Support for OpenJDK developers",
   "publisher": "magicus",
