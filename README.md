@@ -49,8 +49,7 @@ This extension contributes the following commands:
 
 Add ability to open the PR diff as an editor in VS Code. I highly recommend
 complementing this functionality with a plugin for viewing diff files, such as
-[Diff Viewer](
-https://marketplace.visualstudio.com/items?itemName=caponetto.vscode-diff-viewer).
+[Diff Viewer](https://marketplace.visualstudio.com/items?itemName=caponetto.vscode-diff-viewer).
 
 ### 2.0.1
 
