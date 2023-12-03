@@ -45,6 +45,10 @@ This extension contributes the following commands:
 
 ## Release Notes
 
+### 2.0.3
+
+Maintainance release to fix documentation.
+
 ### 2.0.2
 
 Add ability to open the PR diff as an editor in VS Code. I highly recommend
